@@ -17,6 +17,8 @@ class PhrasesTriggerStates(StatesGroup):
     complete = State()
 
 
+
+
 async def configure_triggers_start(call: types.CallbackQuery, db_user: DbUser):
     if not db_user.subscription.is_subscribe:
         await call.message.answer("Подписка закончилась. Выберите новую подписку ниже",
@@ -29,7 +31,6 @@ async def configure_triggers_start(call: types.CallbackQuery, db_user: DbUser):
 async def create_new_trigger(call: types.CallbackQuery):
     await call.message.delete()
     await call.message.answer("Выберите на какие сообщения отвечать", reply_markup=trigger_menu.triggers_choice_type)
-
 
 async def create_all_message_trigger(message: types.Message):
     await message.answer("Выберите текст ответа на все личные сообщения!")

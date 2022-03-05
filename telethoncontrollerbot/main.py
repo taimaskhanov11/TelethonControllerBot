@@ -6,6 +6,7 @@ from aiogram import Bot
 from aiogram.types import BotCommand
 from loguru import logger
 
+from telethoncontrollerbot.apps.bot.handlers.connect_account import register_connect_account_handlers
 from telethoncontrollerbot.apps.bot.handlers.main_menu import register_common_handlers
 from telethoncontrollerbot.apps.bot.handlers.configure_triggers import register_configure_triggers_handlers
 from telethoncontrollerbot.apps.bot.handlers.make_subscription import register_subscriptions_handlers
@@ -48,6 +49,7 @@ async def main():
     # Регистрация хэндлеров
     register_common_handlers(dp)
     register_configure_triggers_handlers(dp)
+    register_connect_account_handlers(dp)
     register_subscriptions_handlers(dp)
 
     # Регистрация middleware

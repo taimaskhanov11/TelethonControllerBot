@@ -6,6 +6,13 @@ from tortoise import fields, models
 from telethoncontrollerbot.config.config import TZ
 
 
+class Account(models.Model):
+    db_user = fields.OneToOneField("models.DbUser", related_name="db_user")
+    api_id = fields.IntField()
+    api_hash = fields.CharField(max_length=50)
+    number = fields.CharField(max_length=20)
+
+
 class DbUser(models.Model):
     user_id = fields.IntField(index=True)
     username = fields.CharField(max_length=255)

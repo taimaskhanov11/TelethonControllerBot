@@ -1,6 +1,7 @@
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 _triggers_menu_data_buttons = (
+    ("Подключить аккаунт", "connect_account"),
     ("Текущие триггеры", "current_triggers"),
     ("Создать новый триггер", "new_trigger"),
     # (),
