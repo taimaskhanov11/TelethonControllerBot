@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "TelethonControllerBot"
+version = "0.1.0"
+description = ""
+authors = ["taimaskhanov11 <81189712+taimaskhanov11@users.noreply.github.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+aiogram = "^2.19"
+Telethon = "^1.24.0"
+tortoise-orm = {extras = ["asyncpg"], version = "^0.18.1"}
+pydantic = "^1.9.0"
+loguru = "^0.6.0"
+cryptg = "^0.2.post4"
+glqiwiapi = "^2.0.4"
+yookassa = "^2.2.3"
+aiohttp = "^3.8.1"
+environs = "^9.5.0"
+
+[tool.poetry.dev-dependencies]
+pytest = "^5.2"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
