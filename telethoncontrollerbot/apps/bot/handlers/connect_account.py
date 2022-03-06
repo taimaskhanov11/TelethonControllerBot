@@ -1,18 +1,23 @@
 import asyncio
+import multiprocessing
+from multiprocessing import Process
+from threading import Thread
 
 from aiogram import Dispatcher, types
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from loguru import logger
 
-from telethoncontrollerbot.apps.controller.controller import Controller
+from telethoncontrollerbot.apps.controller.controller import Controller, start_controller
 from telethoncontrollerbot.config.config import TEMP_DATA
-from telethoncontrollerbot.db.models import DbUser
+from telethoncontrollerbot.db.models import DbUser, Account
+
+queue = multiprocessing.Queue()
 
 
 class ConnectAccountStates(StatesGroup):
-    api_id = State()
-    api_hash = State()
+    # api_id = State()
+    # api_hash = State()
     number = State()
     code = State()
 
@@ -27,26 +32,18 @@ async def connect_account(call: types.CallbackQuery):
 
     )
     # await ConnectAccountStates.api_id.set()
-    await ConnectAccountStates.number.set()
-
-
-async def connect_account_api_id(message: types.Message, state: FSMContext):
-    await state.update_data(api_id=int(message.text))
-    await ConnectAccountStates.next()
-    await message.answer("Введите ваш api_hash")
-
-
-async def connect_account_api_hash(message: types.Message, state: FSMContext):
-    await state.update_data(api_hash=message.text)
-    await ConnectAccountStates.next()
-    await message.answer("Введите ваш номер телефона")
+    await ConnectAccountStates.first()
 
 
 async def connect_account_number(message: types.Message, db_user: DbUser, state: FSMContext):
     # data = await state.get_data()
 
     api_id, api_hash, number = message.text.split(":")
-
+    await state.update_data(
+        api_id=int(api_id),
+        api_hash=api_hash,
+        number=number
+    )
     logger.info(f"{db_user.username}| Полученные данные {api_id}|{api_hash}|{number}")
     client = Controller(
         user_id=db_user.user_id,
@@ -55,23 +52,44 @@ async def connect_account_number(message: types.Message, db_user: DbUser, state:
         api_id=api_id,
         api_hash=api_hash
     )
+    asyncio.create_task(client.start(new=True))
 
-    asyncio.create_task(client.start())
+    # Thread(target=start_controller, args=(client.start, )).start()
+    # Process(
+    #     target=start_controller, args=(
+    #         db_user.user_id, db_user.username, number, api_id, api_hash, queue)
+    # ).start()
 
+    # await state.update_data(queue=queue)
     await ConnectAccountStates.next()
 
-    await message.answer("Введите код подтверждения из сообщения Телеграмм")
+    await message.answer("Введите код подтверждения из сообщения Телеграмм в таком виде omega<ваш код>, Например:\n"
+                         " omega43123")
 
 
 async def connect_account_code(message: types.Message, db_user: DbUser, state: FSMContext):
-    TEMP_DATA[db_user.user_id] = message.text
-    await message.answer("Код получен, ожидайте завершения")
+    # code = message.text.replace("t", "")
+    code = message.text.replace("omega", "")
+    TEMP_DATA[db_user.user_id] = code
+
+    await message.answer("Код получен, ожидайте завершения\n Вам придет сообщение в личный чат.")
+    # data = await state.get_data()
+    # queue: multiprocessing.Queue = data["queue"]
+    # queue.put_nowait(code)
+
+    # account = await Account.create(
+    #     api_id=data["api_id"],
+    #     api_hash=data["api_hash"],
+    #     number=data["number"],
+    # )
+    # db_user.account = account
+    # await db_user.save()
     await state.finish()
 
 
 def register_connect_account_handlers(dp: Dispatcher):
     dp.register_callback_query_handler(connect_account, text="connect_account")
-    dp.register_message_handler(connect_account_api_id, state=ConnectAccountStates.api_id)
-    dp.register_message_handler(connect_account_api_hash, state=ConnectAccountStates.api_hash)
+    # dp.register_message_handler(connect_account_api_id, state=ConnectAccountStates.api_id)
+    # dp.register_message_handler(connect_account_api_hash, state=ConnectAccountStates.api_hash)
     dp.register_message_handler(connect_account_number, state=ConnectAccountStates.number)
     dp.register_message_handler(connect_account_code, state=ConnectAccountStates.code)

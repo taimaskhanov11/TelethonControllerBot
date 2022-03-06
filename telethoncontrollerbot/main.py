@@ -6,13 +6,17 @@ from aiogram import Bot
 from aiogram.types import BotCommand
 from loguru import logger
 
+from telethoncontrollerbot.apps.bot.handlers.admin_panel import register_admin_menu_handlers
 from telethoncontrollerbot.apps.bot.handlers.connect_account import register_connect_account_handlers
 from telethoncontrollerbot.apps.bot.handlers.main_menu import register_common_handlers
 from telethoncontrollerbot.apps.bot.handlers.configure_triggers import register_configure_triggers_handlers
 from telethoncontrollerbot.apps.bot.handlers.make_subscription import register_subscriptions_handlers
+from telethoncontrollerbot.apps.bot.handlers.subscription_settings import register_admin_subscription_settings_handlers
 from telethoncontrollerbot.apps.bot.middleware.father_middleware import FatherMiddleware
-from telethoncontrollerbot.apps.bot.payments.subscription_info import init_subscriptions_info
+from telethoncontrollerbot.apps.bot.utils.subscription_info import init_subscriptions_info
 from telethoncontrollerbot.apps.bot.utils.daily_processes import everyday_processes
+from telethoncontrollerbot.apps.controller.controller_data import init_triggers
+from telethoncontrollerbot.apps.controller.session_data import init_sessions
 from telethoncontrollerbot.apps.controller.settings import init_logging
 from telethoncontrollerbot.db.db_main import init_tortoise
 from telethoncontrollerbot.loader import dp, bot
@@ -48,11 +52,15 @@ async def main():
 
     # Регистрация хэндлеров
     register_common_handlers(dp)
+    register_admin_menu_handlers(dp)
+
     register_configure_triggers_handlers(dp)
     register_connect_account_handlers(dp)
     register_subscriptions_handlers(dp)
+    register_admin_subscription_settings_handlers(dp)
 
     # Регистрация middleware
+
     dp.middleware.setup(FatherMiddleware())
 
     # Регистрация фильтров
@@ -71,9 +79,13 @@ async def main():
     await init_subscriptions_info()
     #
     # await init_sub_channel()
+    await init_triggers()
 
     # Запуск задачи ежедневного обновления запросов и проверки подписки
     asyncio.create_task(everyday_processes())
+
+    # Запуск контроллера триггеров
+    asyncio.create_task(init_sessions())
 
     # Создание ежедневного резервного копирования
     # asyncio.create_task(making_backup(3600))

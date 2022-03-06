@@ -1,21 +1,27 @@
 import asyncio
 import logging
 import time
+import multiprocessing
+from pathlib import Path
 from typing import Optional
 
 from loguru import logger
-
 from pydantic import BaseModel, validator
 from telethon import TelegramClient, events
 
 # client = TelegramClient(f'_session', api_id, api_hash)
+from telethon.tl import patched
+
+from telethoncontrollerbot.apps.controller.controller_data import USERS_TRIGGERS_COLLECTION
 from telethoncontrollerbot.apps.controller.settings import init_logging
 from telethoncontrollerbot.config.config import TEMP_DATA
+from telethoncontrollerbot.db.models import DbUser, Account
+from telethoncontrollerbot.loader import bot
 
 
 class Controller(BaseModel):
     user_id: int
-    username: str
+    username: Optional[str]
     number: str
     api_id: int
     api_hash: str
@@ -25,50 +31,113 @@ class Controller(BaseModel):
     def create_client(cls, value, values):
         if isinstance(value, TelegramClient):
             return value
-        return TelegramClient(f"{values['username']}_{values['user_id']}_session", values["api_id"], values["api_hash"])
+        path = str(Path(Path(__file__).parent, "sessions", f"{values['user_id']}_{values['username']}_session.session"))
+        logger.info(path)
+        # exit()
+        return TelegramClient(
+            path,
+            # f"{values.get('username')}_{values['user_id']}_session",
+            values["api_id"],
+            values["api_hash"],
+            # proxy=("HTTP", "45.129.7.23", 8000)
+        )
 
     class Config:
         arbitrary_types_allowed = True
 
-    async def wait_code(self, ):
-        for _ in range(3):
+    async def wait_code2(self):
+
+        for _ in range(4):
             logger.debug(f"Ожидание кода {self.username}|{self.number}")
             code = TEMP_DATA.get(self.user_id)
             if code:
-                del TEMP_DATA[self.user_id]
+                # del TEMP_DATA[self.user_id]
                 logger.warning(f"Код найден {code}")
-                return code
-            await asyncio.sleep(4)
+                return int(code)
+            await asyncio.sleep(5)
             # time.sleep(4)
         return
 
+    async def wait_code(self):
+        logger.debug(f"Ожидание кода {self.username}|{self.number}")
+        await asyncio.sleep(20)
+        code = TEMP_DATA.get(self.user_id)
+        logger.warning(f"Код найден {code}")
+        # del TEMP_DATA[self.user_id]
+        return code
+
+    def wait_code3(self):
+        logger.debug(f"Ожидание кода {self.username}|{self.number}")
+        time.sleep(20)
+        code = TEMP_DATA.get(self.user_id)
+        logger.warning(f"Код найден {code}")
+        # del TEMP_DATA[self.user_id]
+        return lambda: code
+
     @logger.catch
-    async def start(self):
+    async def start(self, new=False):
 
         @self.client.on(events.NewMessage(incoming=True))
         async def my_event_handler(event: events.NewMessage):
-            print(event)
-            await self.client.send_message(await event.get_chat(), event.message)
+            message: patched.Message = event.message
+            answer = USERS_TRIGGERS_COLLECTION[self.user_id].get_answer(message.text)
+            if answer:
+                await self.client.send_message(await event.get_chat(), answer)
             # if event.raw_text
             # pass
 
+        await self.client.connect()
+        if not await self.client.is_user_authorized():
+            sent_code = await self.client.send_code_request(self.number)
+            code = None
+            for i in range(3):
+                logger.info("Ожидание кода")
+                await asyncio.sleep(10)
+                code = TEMP_DATA.get(self.user_id)
+                if code:
+                    logger.success(f"Код найден {code}")
+                    break
+            if code:
+                # await self.client.sign_in(self.number, lambda: code)
+                await self.client.sign_in(phone=self.number, code=code, phone_code_hash=sent_code.phone_code_hash)
 
-        await self.client.start(
-            phone=lambda: self.number,
-            code_callback=self.wait_code
-            # code_callback=lambda: TEMP_DATA.get(self.user_id)
-        )
+        if await self.client.is_user_authorized():
+            await self.client.send_message('me', 'Бот успешно запущен!')
+            logger.success(f"Успешный вход {self.username}|{self.number}|{self.user_id}")
+            if new:
+                await bot.send_message(self.user_id, "Бот успешно подключен. Можете начать изменять триггеры в меню")
+                db_user = await DbUser.get(user_id=self.user_id)
+                account = await Account.create(
+                    api_id=self.api_id,
+                    api_hash=self.api_hash,
+                    number=self.number,
+                )
+                db_user.account = account
+                await db_user.save()
+                logger.success("Данные аккаунта созданы")
+            await self.client.run_until_disconnected()
+        else:
+            await bot.send_message(self.user_id, "Ошибка при подключении аккаунта")
+            logger.warning(f"{self.user_id}|Не удалось подключиться к системе")
 
 
-        await self.client.send_message('me', 'Бот успешно запущен!')
-        await self.client.run_until_disconnected()
+def start_controller(user_id, username, number, api_id, api_hash, queue):
+    client = Controller(
+        user_id=user_id,
+        username=username,
+        number=number,
+        api_id=api_id,
+        api_hash=api_hash
+    )
+
+    asyncio.run(client.start(queue))
 
 
 if __name__ == '__main__':
     init_logging(old_logger=True, level=logging.INFO)
-    api_id = 15607899
-    api_hash = "b5028e57a18d6a925b305047ea954f58"
-    client = Controller(user_id=1985947355, username="jeraldo_me1", number="79697731741", api_id=api_id,
+    api_id = 16629671
+    api_hash = "8bb51f9d62e259d5e893ccb02d133b2a"
+    client = Controller(user_id=5050812985, username=None, number="79647116291", api_id=api_id,
                         api_hash=api_hash)
     asyncio.run(client.start())
     # client.start()

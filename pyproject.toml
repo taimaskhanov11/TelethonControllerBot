@@ -16,6 +16,7 @@ glqiwiapi = "^2.0.4"
 yookassa = "^2.2.3"
 aiohttp = "^3.8.1"
 environs = "^9.5.0"
+PySocks = "^1.7.1"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"

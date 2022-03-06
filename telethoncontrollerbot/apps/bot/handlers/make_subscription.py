@@ -1,4 +1,3 @@
-import random
 import re
 
 from aiogram import Dispatcher, types
@@ -10,7 +9,7 @@ from telethoncontrollerbot.apps.bot.filters.payment_filters import ViewSubscript
 from telethoncontrollerbot.apps.bot.markups.subscribe_menu import get_subscribe_menu_view, get_subscribe_payment, \
     get_subscribe_menu_pay
 from telethoncontrollerbot.apps.bot.payments.payment_processes import check_payment
-from telethoncontrollerbot.apps.bot.payments.subscription_info import SUBSCRIPTIONS_INFO
+from telethoncontrollerbot.apps.bot.utils.subscription_info import SUBSCRIPTIONS_INFO
 from telethoncontrollerbot.apps.bot.payments.yookassa_async import YooPayment
 from telethoncontrollerbot.db.models import DbUser, Billing
 

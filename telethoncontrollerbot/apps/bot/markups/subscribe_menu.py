@@ -1,6 +1,6 @@
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
-from telethoncontrollerbot.apps.bot.payments.subscription_info import SUBSCRIPTIONS_INFO
+from telethoncontrollerbot.apps.bot.utils.subscription_info import SUBSCRIPTIONS_INFO
 
 
 def get_subscribe_menu_pay(pk: int):

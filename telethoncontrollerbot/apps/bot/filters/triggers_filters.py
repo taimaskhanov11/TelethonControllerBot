@@ -18,3 +18,13 @@ class ConfigureTriggersFilter(MainPaymentFilter):
         if call.data == "configure_triggers":
             return await super().check(call)
 
+class CurrentTriggersFilter(MainPaymentFilter):
+    async def check(self, call: types.CallbackQuery):
+        if call.data == "current_triggers":
+            return await super().check(call)
+
+class RestartControllerBotFilter(MainPaymentFilter):
+    async def check(self, call: types.CallbackQuery):
+        if call.data == "restart_controller_bot":
+            return await super().check(call)
+
