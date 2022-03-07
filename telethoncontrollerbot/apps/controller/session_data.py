@@ -15,7 +15,7 @@ async def start_session(acc):  # todo 3/6/2022 9:14 PM taima:
         username=acc.db_user.username,
         number=acc.number,
         api_id=acc.api_id,
-        api_hash=acc.api_hash
+        api_hash=acc.api_hash,
     )
     task = asyncio.create_task(controller.start())
     SESSION_TASKS[acc.db_user.user_id] = task

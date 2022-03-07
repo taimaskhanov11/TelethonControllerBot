@@ -14,7 +14,7 @@ class LangChoice(StatesGroup):
 
 
 @logger.catch
-async def start(message: types.Message, state: FSMContext, ):
+async def start(message: types.Message, state: FSMContext):
     await state.finish()
     await message.answer("Главное меню", reply_markup=main_menu.main_menu)
 
@@ -27,7 +27,7 @@ async def profile(call: types.CallbackQuery, db_user: DbUser):
         f"👤 Логин: @{db_user.username}\n"
         f"💵 Вид подписки - {db_user.subscription.title}\n"
         f"🕜 Осталось до завершения подписки - {db_user.subscription.duration}.\n",
-        reply_markup=renew_subscription(db_user.subscription.title) if db_user.subscription.is_subscribe else None
+        reply_markup=renew_subscription(db_user.subscription.title) if db_user.subscription.is_subscribe else None,
     )
 
 

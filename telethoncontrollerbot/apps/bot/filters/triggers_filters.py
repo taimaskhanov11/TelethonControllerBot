@@ -4,7 +4,7 @@ from telethoncontrollerbot.apps.bot.filters.main_menu_filters import MainPayment
 from telethoncontrollerbot.loader import bot
 
 
-class SubscribeCheckFilter(MainPaymentFilter): #todo 3/5/2022 10:56 PM taima:
+class SubscribeCheckFilter(MainPaymentFilter):  # todo 3/5/2022 10:56 PM taima:
     async def check(self, call: types.CallbackQuery):
         data = await super().check(call)
         if data["db_user"].subscription.is_subscribe:
@@ -18,13 +18,14 @@ class ConfigureTriggersFilter(MainPaymentFilter):
         if call.data == "configure_triggers":
             return await super().check(call)
 
+
 class CurrentTriggersFilter(MainPaymentFilter):
     async def check(self, call: types.CallbackQuery):
         if call.data == "current_triggers":
             return await super().check(call)
 
+
 class RestartControllerBotFilter(MainPaymentFilter):
     async def check(self, call: types.CallbackQuery):
         if call.data == "restart_controller_bot":
             return await super().check(call)
-

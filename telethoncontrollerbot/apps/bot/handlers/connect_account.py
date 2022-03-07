@@ -1,16 +1,15 @@
 import asyncio
 import multiprocessing
-from multiprocessing import Process
-from threading import Thread
 
 from aiogram import Dispatcher, types
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from loguru import logger
 
-from telethoncontrollerbot.apps.controller.controller import Controller, start_controller
+from telethoncontrollerbot.apps.controller.controller import Controller
+from telethoncontrollerbot.apps.controller.session_data import SESSION_TASKS
 from telethoncontrollerbot.config.config import TEMP_DATA
-from telethoncontrollerbot.db.models import DbUser, Account
+from telethoncontrollerbot.db.models import DbUser
 
 queue = multiprocessing.Queue()
 
@@ -29,7 +28,6 @@ async def connect_account(call: types.CallbackQuery):
         # "Как закончите введите сюда ваш api_id"
         "Как закончите введите сюда ваши данные в формате  api_id:api_hash:номер телефона. Пример\n"
         "123445:asdf31234fads:79622231741"
-
     )
     # await ConnectAccountStates.api_id.set()
     await ConnectAccountStates.first()
@@ -39,21 +37,13 @@ async def connect_account_number(message: types.Message, db_user: DbUser, state:
     # data = await state.get_data()
 
     api_id, api_hash, number = message.text.split(":")
-    await state.update_data(
-        api_id=int(api_id),
-        api_hash=api_hash,
-        number=number
-    )
+    await state.update_data(api_id=int(api_id), api_hash=api_hash, number=number)
     logger.info(f"{db_user.username}| Полученные данные {api_id}|{api_hash}|{number}")
     client = Controller(
-        user_id=db_user.user_id,
-        username=db_user.username,
-        number=number,
-        api_id=api_id,
-        api_hash=api_hash
+        user_id=db_user.user_id, username=db_user.username, number=number, api_id=api_id, api_hash=api_hash
     )
-    asyncio.create_task(client.start(new=True))
-
+    task = asyncio.create_task(client.start(new=True))
+    SESSION_TASKS[db_user.user_id] = task
     # Thread(target=start_controller, args=(client.start, )).start()
     # Process(
     #     target=start_controller, args=(
@@ -63,8 +53,10 @@ async def connect_account_number(message: types.Message, db_user: DbUser, state:
     # await state.update_data(queue=queue)
     await ConnectAccountStates.next()
 
-    await message.answer("Введите код подтверждения из сообщения Телеграмм в таком виде omega<ваш код>, Например:\n"
-                         " omega43123")
+    await message.answer(
+        "Введите код подтверждения из сообщения Телеграмм с префиксом omega, в таком виде omega<ваш код>, Например:\n"
+        "omega43123"
+    )
 
 
 async def connect_account_code(message: types.Message, db_user: DbUser, state: FSMContext):

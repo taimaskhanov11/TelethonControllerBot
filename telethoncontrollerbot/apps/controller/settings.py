@@ -12,12 +12,7 @@ LOG_DIR.mkdir(exist_ok=True)
 
 def init_logging(old_logger=False, level=logging.INFO):
     log.remove()
-    log.add(
-        sink=sys.stderr,
-        level="TRACE",
-        enqueue=True,
-        diagnose=True,
-    )
+    log.add(sink=sys.stderr, level="TRACE", enqueue=True, diagnose=True)
     log.add(
         sink=Path(LOG_DIR, "main.log"),
         level="TRACE",
@@ -28,6 +23,7 @@ def init_logging(old_logger=False, level=logging.INFO):
         compression="zip",
     )
     if old_logger:
+
         class InterceptHandler(logging.Handler):
             def emit(self, record):
                 # Get corresponding Loguru level if it exists
@@ -50,16 +46,15 @@ def init_logging(old_logger=False, level=logging.INFO):
         logging.basicConfig(
             encoding="utf-8",
             level=level,
-            format='{levelname} [{asctime}] {name}: {message}',
+            format="{levelname} [{asctime}] {name}: {message}",
             style="{",
             handlers=[
                 logging.StreamHandler(),
                 # InterceptHandler(),
-                logging.FileHandler(
-                    filename=Path(LOG_DIR, "telethon.log"), encoding="utf-8",
-                ),
+                logging.FileHandler(filename=Path(LOG_DIR, "telethon.log"), encoding="utf-8"),
             ],
         )
+
 
 # logging.basicConfig(format='[%(levelname) 5s/%(asctime)s] %(name)s: %(message)s',
 #                     level=logging.INFO)

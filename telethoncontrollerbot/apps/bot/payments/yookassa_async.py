@@ -11,10 +11,7 @@ SHOP_ID = 878719
 YANDEX_API_KEY = "live_jGUCaplu6bfGVWGRkgK2Arvf2O3AaFqS80sv-UKZnpM"
 
 link = "https://api.yookassa.ru/v3/payments"
-headers = {
-    "Authorization": _basic_auth_str(SHOP_ID, YANDEX_API_KEY),
-    "Content-type": "application/json",
-}
+headers = {"Authorization": _basic_auth_str(SHOP_ID, YANDEX_API_KEY), "Content-type": "application/json"}
 tz = datetime.timezone(datetime.timedelta(hours=0))
 
 
@@ -39,20 +36,11 @@ class YooPayment(BaseModel):
 
     @classmethod
     async def create_payment(
-            cls,
-            description: str,
-            amount: float,
-            return_url: str = "https://t.me/MyTgControllerBot"
+        cls, description: str, amount: float, return_url: str = "https://t.me/MyTgControllerBot"
     ) -> "YooPayment":
         data = {
-            "amount": {
-                "value": amount,
-                "currency": "RUB"
-            },
-            "confirmation": {
-                "type": "redirect",
-                "return_url": return_url
-            },
+            "amount": {"value": amount, "currency": "RUB"},
+            "confirmation": {"type": "redirect", "return_url": return_url},
             "capture": True,
             "description": description,
             # "expires_at": str(datetime.datetime.now(tz) + datetime.timedelta(minutes=15))
@@ -88,7 +76,7 @@ async def main():
 
 
 # 29b594ab-000f-5000-9000-1e787f32f011
-if __name__ == '__main__':
+if __name__ == "__main__":
     # print(_basic_auth_str(SHOP_ID, YANDEX_API_KEY))
     # asyncio.run(main())
     asyncio.run(main())

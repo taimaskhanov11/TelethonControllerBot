@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from loguru import logger
 
@@ -15,9 +15,7 @@ async def check_payment(bill_id, db_user):  # todo 2/28/2022 8:53 PM taima: по
         logger.info(f"{db_user.user_id}|{bill.id} успешно оплачен")
         db_bill = await Billing.get(bill_id=bill_id).prefetch_related("subscription")
 
-        await DbPayment.create(
-            db_user=db_user, date=datetime.now(TZ), amount=db_bill.amount
-        )
+        await DbPayment.create(db_user=db_user, date=datetime.now(TZ), amount=db_bill.amount)
         if db_user.subscription.title == db_bill.subscription.title:
             db_user.subscription.duration += db_bill.subscription.days_duration
 

@@ -1,18 +1,21 @@
-import asyncio
+import re
 
 from aiogram import Dispatcher, types
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.types import ReplyKeyboardRemove
+from loguru import logger
 
-from telethoncontrollerbot.apps.bot.filters.triggers_filters import ConfigureTriggersFilter, CurrentTriggersFilter, \
-    RestartControllerBotFilter
+from telethoncontrollerbot.apps.bot.filters.triggers_filters import (
+    ConfigureTriggersFilter,
+    CurrentTriggersFilter,
+    RestartControllerBotFilter,
+)
 from telethoncontrollerbot.apps.bot.markups import trigger_menu
 from telethoncontrollerbot.apps.bot.markups.subscribe_menu import get_subscribe_menu_view
 from telethoncontrollerbot.apps.bot.markups.trigger_menu import triggers_choice, triggers_fields
-from telethoncontrollerbot.apps.controller.controller_data import USERS_TRIGGERS_COLLECTION
-from telethoncontrollerbot.apps.controller.session_data import SESSION_TASKS, start_session
-from telethoncontrollerbot.db.models import DbUser, Account
+from telethoncontrollerbot.apps.controller.triggers_data import TRIGGERS_COLLECTION, Trigger, TriggerCollection
+from telethoncontrollerbot.db.models import DbUser, DbTrigger, DbTriggerCollection
 
 
 class AllMessageTriggerStates(StatesGroup):
@@ -30,21 +33,92 @@ class TriggersChangeStates(StatesGroup):
     complete = State()
 
 
+class AllMessageAnswerChangeStates(StatesGroup):
+    start = State()
+
+
+async def configure_triggers_start(call: types.CallbackQuery, db_user: DbUser):
+    if not db_user.subscription.duration:
+        await call.message.answer(
+            "Подписка закончилась. Выберите новую подписку ниже", reply_markup=get_subscribe_menu_view()
+        )
+        return
+    await call.message.delete()
+    await call.message.answer("Меню настройки триггеров", reply_markup=trigger_menu.get_trigger_menu(db_user))
+
+
+async def restart_controller_bot(call: types.CallbackQuery, db_user: DbUser):
+    # SESSION_TASKS[db_user.user_id].cancel()
+    # acc = await Account.get(db_user=db_user)
+    # asyncio.create_task(start_session(acc))
+    await call.message.answer("Бот успешно перезапущены")
+
+
 async def current_triggers(call: types.CallbackQuery, db_user: DbUser):
-    triggers_str = ""
-    tr_col = USERS_TRIGGERS_COLLECTION[call.from_user.id]
-    await call.message.answer(f"{str(tr_col)}\n\nВыберите цифру для изменения",
-                              reply_markup=triggers_choice(len(tr_col.triggers)))
+    try:
+        tr_col = TRIGGERS_COLLECTION[db_user.user_id]
+        print(tr_col)
+        await call.message.answer(
+            f"{str(tr_col)}",
+            # reply_markup=triggers_choice(len(tr_col.triggers))
+            reply_markup=trigger_menu.change_trigger_status(tr_col),
+        )
+
+    except Exception as e:
+        logger.critical(e)
+        await call.message.answer("Пусто. Создайте новые триггеры")
+
+
+@logger.catch
+async def change_trigger_status(call: types.CallbackQuery):
+    field = re.findall(r"change_trigger_status_(.*)", call.data)[0]
+    tr_col = TRIGGERS_COLLECTION[call.from_user.id]
+    status = getattr(tr_col, field)
+    setattr(tr_col, field, not status)
+    db_trigger_coll = await DbTriggerCollection.get(id=tr_col.id)
+    setattr(db_trigger_coll, field, not status)
+    await db_trigger_coll.save()
+    await call.message.answer("Данные обновлены")
+
+    await call.message.edit_text(f"{str(tr_col)}\n\n")
+    await call.message.edit_reply_markup(trigger_menu.change_trigger_status(tr_col))
+
+    # await call.message.answer("Данные обновлены", reply_markup=trigger_menu.change_trigger_status(tr_col))
+
+
+async def triggers_change_start(call: types.CallbackQuery):
+    tr_col = TRIGGERS_COLLECTION[call.from_user.id]
+    await call.message.delete()
+    await call.message.answer(
+        "Выберите цифру триггера для изменения\n" "Для отмены нажмите /start",
+        reply_markup=triggers_choice(len(tr_col.triggers), True),
+    )
     # reply_markup=triggers_choice(27))
     await TriggersChangeStates.first()
 
 
 async def triggers_change_choice(message: types.Message, state: FSMContext):
-    number = int(message.text) - 1
-    trigger = USERS_TRIGGERS_COLLECTION[message.from_user.id].triggers[number]
+    number = int(message.text)
+    if number == 0:
+        await message.answer(f"Ведите новый текст для ответа на любой текст сообщений")
+        await AllMessageAnswerChangeStates.start.set()
+        return
+    trigger = TRIGGERS_COLLECTION[message.from_user.id].triggers[number - 1]
     await state.update_data(trigger=trigger)
     await message.answer(f"Выберите поле для изменения\n{trigger}", reply_markup=triggers_fields)
     await TriggersChangeStates.next()
+
+
+async def all_message_answer_change(message: types.Message, db_user: DbUser, state: FSMContext):
+    trigger_coll = TRIGGERS_COLLECTION[message.from_user.id]
+    trigger_coll.all_message_answer = message.text
+    db_trigger_coll = await DbTriggerCollection.get(db_user=db_user)
+    db_trigger_coll.all_message_answer = message.text
+    await db_trigger_coll.save(update_fields=["all_message_answer"])
+    await message.answer(
+        f"Данные обновлены\n{trigger_coll}", reply_markup=trigger_menu.change_trigger_status(trigger_coll)
+    )
+    await state.finish()
 
 
 async def triggers_change_field(message: types.Message, state: FSMContext):
@@ -63,28 +137,17 @@ async def triggers_change_complete(message: types.Message, state: FSMContext):
     data = await state.get_data()
     trigger = data["trigger"]
     field = data["field"]
+    new_value = message.text
     if field == "phrases":
-        phrases = map(lambda x: x.strip(), message.text.split(","))
-        setattr(trigger, field, phrases)  # todo 3/7/2022 1:54 AM taima:
-    else:
-        setattr(trigger, field, message.text)  # todo 3/7/2022 1:54 AM taima:
-    await message.answer(f"Данные обновлены\n{trigger}")
+        new_value = list(map(lambda x: x.strip(), message.text.split(",")))
+    setattr(trigger, field, new_value)  # todo 3/7/2022 1:54 AM taima:
 
-
-async def restart_controller_bot(call: types.CallbackQuery, db_user: DbUser):
-    SESSION_TASKS[db_user.user_id].cancel()
-    acc = await Account.get(db_user=db_user)
-    asyncio.create_task(start_session(acc))
-    await call.message.answer("Бот успешно перезапущены")
-
-
-async def configure_triggers_start(call: types.CallbackQuery, db_user: DbUser):
-    if not db_user.subscription.duration:
-        await call.message.answer("Подписка закончилась. Выберите новую подписку ниже",
-                                  reply_markup=get_subscribe_menu_view())
-        return
-    await call.message.delete()
-    await call.message.answer("Меню настройки триггеров", reply_markup=trigger_menu.get_trigger_menu(db_user))
+    db_trigger = await DbTrigger.get(id=trigger.id)
+    setattr(db_trigger, field, new_value)
+    await db_trigger.save(update_fields=[field])
+    logger.info(f"Trigger changed {new_value}{type(new_value)}")
+    trigger_coll = TRIGGERS_COLLECTION[message.from_user.id]
+    await message.answer(f"Данные обновлены\n{trigger}", reply_markup=trigger_menu.change_trigger_status(trigger_coll))
 
 
 async def create_new_trigger(call: types.CallbackQuery):
@@ -92,47 +155,88 @@ async def create_new_trigger(call: types.CallbackQuery):
     await call.message.answer("Выберите на какие сообщения отвечать", reply_markup=trigger_menu.triggers_choice_type)
 
 
-async def create_all_message_trigger(message: types.Message):
-    await message.answer("Выберите текст ответа на все личные сообщения!")
+async def create_all_message_trigger(call: types.CallbackQuery):
+    await call.message.answer("Выберите текст ответа на все личные сообщения!")
     await AllMessageTriggerStates.start.set()
 
 
-async def create_all_message_trigger_complete(message: types.Message, state: FSMContext):
+@logger.catch
+async def create_all_message_trigger_complete(message: types.Message, db_user: DbUser, state: FSMContext):
+    trigger_coll = TRIGGERS_COLLECTION.get(message.from_user.id)
+    text = message.text.lower()
+    if trigger_coll:
+        trigger_coll.all_message_answer = text
+        db_trigger_coll = await DbTriggerCollection.get(id=trigger_coll.id)
+        db_trigger_coll.all_message_answer = text
+        await db_trigger_coll.save(update_fields=["all_message_answer"])
+        logger.info(f"Обновлен текст коллекции триггеров {db_user.user_id}")
+        answer = f"Успешно обновлен текст коллекции триггеров {db_user.user_id}"
+    else:
+        db_trigger_coll = await DbTriggerCollection.create(db_user=db_user, all_message_answer=text)
+        TRIGGERS_COLLECTION[db_user.user_id] = TriggerCollection(**dict(db_trigger_coll))
+        logger.info(f"Создана новая коллекция триггеров {db_user.user_id}")
+        answer = f"Успешно создана новая коллекция триггеров {db_user.user_id}"
+    await message.answer(answer, reply_markup=trigger_menu.get_trigger_menu(db_user))
     # do something #todo 3/5/2022 3:29 PM taima:
     await state.finish()
 
 
 # todo 3/5/2022 3:31 PM taima: сделать форматирование настраиваемым
-async def create_phrases_trigger_phrases(call: types.CallbackQuery, ):
+async def create_phrases_trigger_phrases(call: types.CallbackQuery):
     await call.message.answer("Задайте фразы через запятую")
     await PhrasesTriggerStates.first()
 
 
-async def create_phrases_trigger_answer(message: types.Message, ):
+async def create_phrases_trigger_answer(message: types.Message, state: FSMContext):
+    await state.update_data(phrases=message.text)
     await message.answer("Задайте текст ответа")
     await PhrasesTriggerStates.next()
 
 
-async def create_phrases_trigger_complete(call: types.CallbackQuery, state: FSMContext):
+async def create_phrases_trigger_complete(message: types.Message, db_user: DbUser, state: FSMContext):
     # do something #todo 3/5/2022 3:29 PM taima:
-    await call.message.answer("Триггер успешно добавлен")
+    trigger_coll = TRIGGERS_COLLECTION.get(message.from_user.id)
+    text = message.text.lower()
+    data = await state.get_data()
+
+    if trigger_coll:
+        db_trigger_coll = await DbTriggerCollection.get(id=trigger_coll.id)
+    else:
+        db_trigger_coll = await DbTriggerCollection.create(db_user=db_user)
+        trigger_coll = TriggerCollection(**dict(db_trigger_coll))
+        TRIGGERS_COLLECTION[db_user.user_id] = trigger_coll
+        logger.info(f"Создана новая коллекция триггеров {db_user.user_id}")
+
+    db_trigger = await DbTrigger.create(phrases=data["phrases"], trigger_collection=db_trigger_coll, answer=text)
+
+    trigger = Trigger(**dict(db_trigger))
+    trigger_coll.triggers.append(trigger)
+    logger.info(f"Добавлены фразы {db_user.user_id}")
+
+    await message.answer(
+        f"Триггер успешно добавлен\n{trigger_coll}", reply_markup=trigger_menu.change_trigger_status(trigger_coll)
+    )
     await state.finish()
 
 
 def register_configure_triggers_handlers(dp: Dispatcher):
+    dp.register_callback_query_handler(configure_triggers_start, ConfigureTriggersFilter())
     dp.register_callback_query_handler(restart_controller_bot, RestartControllerBotFilter())
 
     dp.register_callback_query_handler(current_triggers, CurrentTriggersFilter())
+    dp.register_callback_query_handler(change_trigger_status, text_startswith="change_trigger_status_")
+
+    dp.register_callback_query_handler(triggers_change_start, text="change_triggers")
     dp.register_message_handler(triggers_change_choice, state=TriggersChangeStates.choice)
+    dp.register_message_handler(all_message_answer_change, state=AllMessageAnswerChangeStates.start)
     dp.register_message_handler(triggers_change_field, state=TriggersChangeStates.field)
     dp.register_message_handler(triggers_change_complete, state=TriggersChangeStates.complete)
 
-    dp.register_callback_query_handler(configure_triggers_start, ConfigureTriggersFilter())
     dp.register_callback_query_handler(create_new_trigger, text="new_trigger")
 
     dp.register_callback_query_handler(create_all_message_trigger, text="create_trigger_all_message")
-    dp.register_callback_query_handler(create_all_message_trigger_complete, state=AllMessageTriggerStates.start)
+    dp.register_message_handler(create_all_message_trigger_complete, state=AllMessageTriggerStates.start)
 
     dp.register_callback_query_handler(create_phrases_trigger_phrases, text="create_trigger_phrases")
-    dp.register_callback_query_handler(create_phrases_trigger_answer, state=PhrasesTriggerStates.answer)
-    dp.register_callback_query_handler(create_phrases_trigger_complete, state=PhrasesTriggerStates.complete)
+    dp.register_message_handler(create_phrases_trigger_answer, state=PhrasesTriggerStates.answer)
+    dp.register_message_handler(create_phrases_trigger_complete, state=PhrasesTriggerStates.complete)

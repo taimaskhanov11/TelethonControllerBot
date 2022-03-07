@@ -1,7 +1,6 @@
 import asyncio
 import logging
 import time
-import multiprocessing
 from pathlib import Path
 from typing import Optional
 
@@ -9,14 +8,14 @@ from loguru import logger
 from pydantic import BaseModel, validator
 from telethon import TelegramClient, events
 
-# client = TelegramClient(f'_session', api_id, api_hash)
-from telethon.tl import patched
-
-from telethoncontrollerbot.apps.controller.controller_data import USERS_TRIGGERS_COLLECTION
 from telethoncontrollerbot.apps.controller.settings import init_logging
+from telethoncontrollerbot.apps.controller.triggers_data import TRIGGERS_COLLECTION
 from telethoncontrollerbot.config.config import TEMP_DATA
 from telethoncontrollerbot.db.models import DbUser, Account
 from telethoncontrollerbot.loader import bot
+
+
+# client = TelegramClient(f'_session', api_id, api_hash)
 
 
 class Controller(BaseModel):
@@ -74,18 +73,7 @@ class Controller(BaseModel):
         # del TEMP_DATA[self.user_id]
         return lambda: code
 
-    @logger.catch
-    async def start(self, new=False):
-
-        @self.client.on(events.NewMessage(incoming=True))
-        async def my_event_handler(event: events.NewMessage):
-            message: patched.Message = event.message
-            answer = USERS_TRIGGERS_COLLECTION[self.user_id].get_answer(message.text)
-            if answer:
-                await self.client.send_message(await event.get_chat(), answer)
-            # if event.raw_text
-            # pass
-
+    async def connect(self, new):
         await self.client.connect()
         if not await self.client.is_user_authorized():
             sent_code = await self.client.send_code_request(self.number)
@@ -102,42 +90,49 @@ class Controller(BaseModel):
                 await self.client.sign_in(phone=self.number, code=code, phone_code_hash=sent_code.phone_code_hash)
 
         if await self.client.is_user_authorized():
-            await self.client.send_message('me', 'Бот успешно запущен!')
+            await self.client.send_message("me", "Бот успешно запущен!")
             logger.success(f"Успешный вход {self.username}|{self.number}|{self.user_id}")
             if new:
                 await bot.send_message(self.user_id, "Бот успешно подключен. Можете начать изменять триггеры в меню")
                 db_user = await DbUser.get(user_id=self.user_id)
-                account = await Account.create(
-                    api_id=self.api_id,
-                    api_hash=self.api_hash,
-                    number=self.number,
-                )
+                account = await Account.create(api_id=self.api_id, api_hash=self.api_hash, number=self.number)
                 db_user.account = account
                 await db_user.save()
                 logger.success("Данные аккаунта созданы")
             await self.client.run_until_disconnected()
         else:
-            await bot.send_message(self.user_id, "Ошибка при подключении аккаунта")
+            await bot.send_message(self.user_id, "Ошибка при подключении аккаунта\nПовторите попытку подключения")
             logger.warning(f"{self.user_id}|Не удалось подключиться к системе")
+
+    @logger.catch
+    async def start(self, new=False):
+        """Настройка ответов на сообщения"""
+
+        @self.client.on(events.NewMessage(incoming=True))
+        async def my_event_handler(event: events.NewMessage.Event):
+            logger.trace(event)
+            if self.user_id in TRIGGERS_COLLECTION:
+                trigger_collection = TRIGGERS_COLLECTION[self.user_id]
+                # message:patched.Message = event.message
+                logger.debug(f"Поиск ответа {event.message.text}")
+                answer = trigger_collection.get_answer(event)
+                if answer:
+                    logger.success(f"Answer find {answer}")
+                    await self.client.send_message(event.chat_id, answer)
+
+        await self.connect(new)
 
 
 def start_controller(user_id, username, number, api_id, api_hash, queue):
-    client = Controller(
-        user_id=user_id,
-        username=username,
-        number=number,
-        api_id=api_id,
-        api_hash=api_hash
-    )
+    client = Controller(user_id=user_id, username=username, number=number, api_id=api_id, api_hash=api_hash)
 
     asyncio.run(client.start(queue))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     init_logging(old_logger=True, level=logging.INFO)
     api_id = 16629671
     api_hash = "8bb51f9d62e259d5e893ccb02d133b2a"
-    client = Controller(user_id=5050812985, username=None, number="79647116291", api_id=api_id,
-                        api_hash=api_hash)
+    client = Controller(user_id=5050812985, username=None, number="79647116291", api_id=api_id, api_hash=api_hash)
     asyncio.run(client.start())
     # client.start()

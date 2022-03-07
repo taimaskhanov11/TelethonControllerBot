@@ -1,9 +1,6 @@
 from aiogram import types
-from aiogram.dispatcher.filters import BoundFilter
 
 from telethoncontrollerbot.apps.bot.filters.main_menu_filters import MainPaymentFilter
-from telethoncontrollerbot.db.models import DbUser
-
 
 
 class ViewSubscriptionFilter(MainPaymentFilter):

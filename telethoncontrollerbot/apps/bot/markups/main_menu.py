@@ -8,13 +8,5 @@ _main_menu_buttons = (
     ("Настроить тригерры", "configure_triggers"),
 )
 main_menu = InlineKeyboardMarkup(
-    inline_keyboard=[
-        [
-            InlineKeyboardButton(
-                text=text,
-                callback_data=data,
-            )
-        ]
-        for text, data in _main_menu_buttons
-    ]
+    inline_keyboard=[[InlineKeyboardButton(text=text, callback_data=data)] for text, data in _main_menu_buttons]
 )

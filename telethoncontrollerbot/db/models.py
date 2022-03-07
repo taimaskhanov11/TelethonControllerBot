@@ -60,9 +60,7 @@ class SubscriptionInfo(models.Model):
 
 
 class Billing(models.Model):
-    db_user = fields.OneToOneField(
-        "models.DbUser",
-    )
+    db_user = fields.OneToOneField("models.DbUser")
     # bill_id = fields.BigIntField(index=True)
     bill_id = fields.CharField(max_length=255)
     amount = fields.IntField()
@@ -76,12 +74,7 @@ class Billing(models.Model):
             is_paid=False,
             duration=sub_info.days,
         )
-        return await cls.create(
-            db_user=db_user,
-            bill_id=bill_id,
-            amount=sub_info.price,
-            subscription=subscription,
-        )
+        return await cls.create(db_user=db_user, bill_id=bill_id, amount=sub_info.price, subscription=subscription)
 
 
 class DbPayment(models.Model):
@@ -90,16 +83,13 @@ class DbPayment(models.Model):
     amount = fields.IntField()
 
 
-class DbTrigger(models.Model):
-    phrases = fields.TextField()  # list
-    answer = fields.TextField()
-    trigger_collection = fields.ForeignKeyField("models.DbTriggerCollection", related_name="triggers")
-
-
 class DbTriggerCollection(models.Model):
     db_user = fields.OneToOneField("models.DbUser")
-    all_message_answer = fields.TextField()
+    all_message_answer = fields.TextField(null=True)
+    reply_to_phrases = fields.BooleanField(default=False)
     reply_to_all = fields.BooleanField(default=False)
+    reply_to_groups = fields.BooleanField(default=False)
+    reply_to_channels = fields.BooleanField(default=False)
 
     def get_answer(self, text):
         if self.reply_to_all:
@@ -109,3 +99,9 @@ class DbTriggerCollection(models.Model):
             for phrase in phrase_object.phrases:
                 if text in phrase:
                     return phrase_object.reply_to_all
+
+
+class DbTrigger(models.Model):
+    phrases = fields.TextField()  # list
+    answer = fields.TextField()
+    trigger_collection = fields.ForeignKeyField("models.DbTriggerCollection", related_name="triggers")

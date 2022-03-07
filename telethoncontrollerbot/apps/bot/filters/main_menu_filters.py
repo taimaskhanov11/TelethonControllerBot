@@ -18,4 +18,3 @@ class ProfileFilter(MainPaymentFilter):
     async def check(self, call: types.CallbackQuery):
         if call.data == "profile":
             return await super().check(call)
-
