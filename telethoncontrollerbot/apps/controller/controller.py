@@ -118,7 +118,7 @@ class Controller(BaseModel):
                 answer = trigger_collection.get_answer(event)
                 if answer:
                     logger.success(f"Answer find {answer}")
-                    await self.client.send_message(event.chat_id, answer)
+                    await self.client.send_message(await event.get_chat(), answer)
 
         await self.connect(new)
 

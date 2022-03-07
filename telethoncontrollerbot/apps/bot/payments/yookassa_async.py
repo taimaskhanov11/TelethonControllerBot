@@ -61,8 +61,8 @@ class YooPayment(BaseModel):
         async with aiohttp.ClientSession(headers=headers | {"Idempotence-Key": str(uuid.uuid4())}) as session:
             async with session.post(f"{link}/{bill_id}/cancel", json={}) as response:
                 res = await response.json()
-                print(res)
-                # return cls.parse_obj(res)
+                # print(res)
+                return cls.parse_obj(res)
 
 
 async def main():

@@ -78,7 +78,7 @@ async def change_trigger_status(call: types.CallbackQuery):
     db_trigger_coll = await DbTriggerCollection.get(id=tr_col.id)
     setattr(db_trigger_coll, field, not status)
     await db_trigger_coll.save()
-    await call.message.answer("Данные обновлены")
+    # await call.message.answer("Данные обновлены")
 
     await call.message.edit_text(f"{str(tr_col)}\n\n")
     await call.message.edit_reply_markup(trigger_menu.change_trigger_status(tr_col))
@@ -176,7 +176,7 @@ async def create_all_message_trigger_complete(message: types.Message, db_user: D
         TRIGGERS_COLLECTION[db_user.user_id] = TriggerCollection(**dict(db_trigger_coll))
         logger.info(f"Создана новая коллекция триггеров {db_user.user_id}")
         answer = f"Успешно создана новая коллекция триггеров {db_user.user_id}"
-    await message.answer(answer, reply_markup=trigger_menu.get_trigger_menu(db_user))
+    await message.answer(f"{answer}\n{db_trigger_coll}", reply_markup=trigger_menu.get_trigger_menu(db_user))
     # do something #todo 3/5/2022 3:29 PM taima:
     await state.finish()
 

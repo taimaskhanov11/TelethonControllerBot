@@ -37,6 +37,8 @@ async def connect_account_number(message: types.Message, db_user: DbUser, state:
     # data = await state.get_data()
 
     api_id, api_hash, number = message.text.split(":")
+    api_id, api_hash, number = api_id.strip(), api_hash.strip(), number.strip()
+
     await state.update_data(api_id=int(api_id), api_hash=api_hash, number=number)
     logger.info(f"{db_user.username}| Полученные данные {api_id}|{api_hash}|{number}")
     client = Controller(
