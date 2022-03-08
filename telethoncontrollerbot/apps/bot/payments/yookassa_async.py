@@ -7,8 +7,9 @@ import aiohttp
 from pydantic import BaseModel
 from requests.auth import _basic_auth_str
 
-SHOP_ID = 878719
-YANDEX_API_KEY = "live_jGUCaplu6bfGVWGRkgK2Arvf2O3AaFqS80sv-UKZnpM"
+# SHOP_ID = 878719
+# YANDEX_API_KEY = "live_jGUCaplu6bfGVWGRkgK2Arvf2O3AaFqS80sv-UKZnpM"
+from telethoncontrollerbot.config.config import SHOP_ID, YANDEX_API_KEY
 
 link = "https://api.yookassa.ru/v3/payments"
 headers = {"Authorization": _basic_auth_str(SHOP_ID, YANDEX_API_KEY), "Content-type": "application/json"}

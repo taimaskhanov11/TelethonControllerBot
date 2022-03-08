@@ -11,7 +11,7 @@ Telethon = "^1.24.0"
 tortoise-orm = {extras = ["asyncpg"], version = "^0.18.1"}
 pydantic = "^1.9.0"
 loguru = "^0.6.0"
-cryptg = "^0.2.post4"
+#cryptg = "^0.2.post4"
 glqiwiapi = "^2.0.4"
 yookassa = "^2.2.3"
 aiohttp = "^3.8.1"
