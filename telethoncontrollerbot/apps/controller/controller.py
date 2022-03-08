@@ -1,5 +1,4 @@
 import asyncio
-import logging
 import time
 from pathlib import Path
 from typing import Optional
@@ -8,14 +7,14 @@ from loguru import logger
 from pydantic import BaseModel, validator
 from telethon import TelegramClient, events
 
-from telethoncontrollerbot.apps.controller.settings import init_logging
 from telethoncontrollerbot.apps.controller.triggers_data import TRIGGERS_COLLECTION
 from telethoncontrollerbot.config.config import TEMP_DATA
 from telethoncontrollerbot.db.models import DbUser, Account
 from telethoncontrollerbot.loader import bot
 
-
 # client = TelegramClient(f'_session', api_id, api_hash)
+
+SESSION_PATH = Path(Path(__file__).parent, "sessions")
 
 
 class Controller(BaseModel):
@@ -30,7 +29,7 @@ class Controller(BaseModel):
     def create_client(cls, value, values):
         if isinstance(value, TelegramClient):
             return value
-        path = str(Path(Path(__file__).parent, "sessions", f"{values['user_id']}_{values['username']}_session.session"))
+        path = str(Path(SESSION_PATH, f"{values['user_id']}_{values['username']}_session.session"))
         logger.info(path)
         # exit()
         return TelegramClient(
@@ -123,6 +122,14 @@ class Controller(BaseModel):
         await self.connect(new)
 
 
+def delete_session(user_id: int):
+    user_id = str(user_id)
+    for i in SESSION_PATH.iterdir():
+        if i.name.startswith(user_id):
+            i.unlink()
+            logger.info(f"Сессия {user_id} успешно удалена")
+
+
 def start_controller(user_id, username, number, api_id, api_hash, queue):
     client = Controller(user_id=user_id, username=username, number=number, api_id=api_id, api_hash=api_hash)
 
@@ -130,9 +137,11 @@ def start_controller(user_id, username, number, api_id, api_hash, queue):
 
 
 if __name__ == "__main__":
-    init_logging(old_logger=True, level=logging.INFO)
-    api_id = 16629671
-    api_hash = "8bb51f9d62e259d5e893ccb02d133b2a"
-    client = Controller(user_id=5050812985, username=None, number="79647116291", api_id=api_id, api_hash=api_hash)
-    asyncio.run(client.start())
+    delete_session(1985947355)
+
+    # init_logging(old_logger=True, level=logging.INFO)
+    # api_id = 16629671
+    # api_hash = "8bb51f9d62e259d5e893ccb02d133b2a"
+    # client = Controller(user_id=5050812985, username=None, number="79647116291", api_id=api_id, api_hash=api_hash)
+    # asyncio.run(client.start())
     # client.start()

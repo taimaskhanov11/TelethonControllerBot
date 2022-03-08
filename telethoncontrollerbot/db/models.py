@@ -17,7 +17,7 @@ class DbUser(models.Model):
     user_id = fields.BigIntField(index=True)
     username = fields.CharField(max_length=255, null=True)
     subscription = fields.OneToOneField("models.Subscription", related_name="db_user")
-    account = fields.OneToOneField("models.Account", related_name="db_user", null=True)
+    account = fields.OneToOneField("models.Account", related_name="db_user", null=True, on_delete=fields.SET_NULL)
     register_data = fields.DatetimeField()
 
     @classmethod

@@ -25,13 +25,13 @@ class BuySubscription(StatesGroup):
     start = State()
 
 
-async def buy_sub(call: types.CallbackQuery):
+async def buy_sub(message: types.Message):
     try:
-        await call.message.delete()
-        await call.message.answer("❗️Выберите подписку", reply_markup=get_subscribe_menu_view())
+        await message.delete()
+        await message.answer("❗️Выберите подписку", reply_markup=get_subscribe_menu_view())
     except Exception as e:
         logger.critical(e)
-        await call.message.answer("Нет подписок")
+        await message.answer("Нет подписок")
 
 
 async def view_subscription(call: types.CallbackQuery):
@@ -101,7 +101,9 @@ async def accept_payment(call: types.CallbackQuery, db_user: DbUser):
 
 def register_subscriptions_handlers(dp: Dispatcher):
     # dp.register_callback_query_handler(subscribe, text_startswith="subscribe_")
-    dp.register_callback_query_handler(buy_sub, text="buy_sub")
+    # dp.register_callback_query_handler(buy_sub, text="buy_sub")
+    dp.register_message_handler(buy_sub, text_startswith="💳")
+
     dp.register_callback_query_handler(view_subscription, ViewSubscriptionFilter())
     dp.register_callback_query_handler(create_subscribe, SubscribeFilter())
     dp.register_callback_query_handler(reject_payment, RejectPaymentFilter())

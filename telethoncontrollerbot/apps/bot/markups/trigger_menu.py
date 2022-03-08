@@ -2,19 +2,18 @@ from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeybo
 
 from telethoncontrollerbot.apps.controller.triggers_data import TriggerCollection
 
-_triggers_menu_data_buttons = [
-    ("Подключить аккаунт", "connect_account"),
-    ("Текущие триггеры", "current_triggers"),
-    ("Создать новый триггер", "new_trigger"),
-    ("Перезапустить бота", "restart_controller_bot"),
-]
-
 
 def get_trigger_menu(db_user):
-    triggers_menu_data_buttons = _triggers_menu_data_buttons[1:] if db_user.account else _triggers_menu_data_buttons
+    _triggers_menu_data_buttons = [
+        ("Отвязать аккаунт", "unlink_account") if db_user.account else ("Подключить аккаунт", "connect_account"),
+        ("Текущие триггеры", "current_triggers"),
+        ("Создать новый триггер", "new_trigger"),
+        ("Перезапустить бота", "restart_controller_bot"),
+    ]
+
     triggers_menu = InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text=text, callback_data=data)] for text, data in triggers_menu_data_buttons
+            [InlineKeyboardButton(text=text, callback_data=data)] for text, data in _triggers_menu_data_buttons
         ]
     )
     return triggers_menu
@@ -74,7 +73,6 @@ def change_trigger_status(tr_col: TriggerCollection):
             [InlineKeyboardButton(text=text, callback_data=data)] for text, data in _change_triggers_status_data
         ]
     )
-
 
 # _triggers_fields_data = [
 #     (),

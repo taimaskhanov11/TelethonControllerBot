@@ -9,7 +9,7 @@ from loguru import logger
 from telethoncontrollerbot.apps.bot.filters.triggers_filters import (
     ConfigureTriggersFilter,
     CurrentTriggersFilter,
-    RestartControllerBotFilter,
+    RestartControllerBotFilter, CreateTriggerFilter,
 )
 from telethoncontrollerbot.apps.bot.markups import trigger_menu
 from telethoncontrollerbot.apps.bot.markups.subscribe_menu import get_subscribe_menu_view
@@ -37,21 +37,22 @@ class AllMessageAnswerChangeStates(StatesGroup):
     start = State()
 
 
-async def configure_triggers_start(call: types.CallbackQuery, db_user: DbUser):
-    if not db_user.subscription.duration:
-        await call.message.answer(
-            "Подписка закончилась. Выберите новую подписку ниже", reply_markup=get_subscribe_menu_view()
-        )
-        return
-    await call.message.delete()
-    await call.message.answer("Меню настройки триггеров", reply_markup=trigger_menu.get_trigger_menu(db_user))
+async def configure_triggers_start(message: types.Message, db_user: DbUser, state: FSMContext):
+    # if not db_user.subscription.duration:
+    #     await message.answer(
+    #         "Подписка закончилась. Выберите новую подписку ниже", reply_markup=get_subscribe_menu_view()
+    #     )
+    #     return
+    await state.finish()
+    await message.delete()
+    await message.answer("Меню настройки триггеров", reply_markup=trigger_menu.get_trigger_menu(db_user))
 
 
-async def restart_controller_bot(call: types.CallbackQuery, db_user: DbUser):
+async def restart_controller_bot(call: types.CallbackQuery):
     # SESSION_TASKS[db_user.user_id].cancel()
     # acc = await Account.get(db_user=db_user)
     # asyncio.create_task(start_session(acc))
-    await call.message.answer("Бот успешно перезапущены")
+    await call.message.answer("Бот успешно перезапущен")
 
 
 async def current_triggers(call: types.CallbackQuery, db_user: DbUser):
@@ -173,10 +174,11 @@ async def create_all_message_trigger_complete(message: types.Message, db_user: D
         answer = f"Успешно обновлен текст коллекции триггеров {db_user.user_id}"
     else:
         db_trigger_coll = await DbTriggerCollection.create(db_user=db_user, all_message_answer=text)
-        TRIGGERS_COLLECTION[db_user.user_id] = TriggerCollection(**dict(db_trigger_coll))
+        trigger_coll = TriggerCollection(**dict(db_trigger_coll))
+        TRIGGERS_COLLECTION[db_user.user_id] = trigger_coll
         logger.info(f"Создана новая коллекция триггеров {db_user.user_id}")
         answer = f"Успешно создана новая коллекция триггеров {db_user.user_id}"
-    await message.answer(f"{answer}\n{db_trigger_coll}", reply_markup=trigger_menu.get_trigger_menu(db_user))
+    await message.answer(f"{answer}\n{trigger_coll}", reply_markup=trigger_menu.get_trigger_menu(db_user))
     # do something #todo 3/5/2022 3:29 PM taima:
     await state.finish()
 
@@ -220,7 +222,9 @@ async def create_phrases_trigger_complete(message: types.Message, db_user: DbUse
 
 
 def register_configure_triggers_handlers(dp: Dispatcher):
-    dp.register_callback_query_handler(configure_triggers_start, ConfigureTriggersFilter())
+    # dp.register_callback_query_handler(configure_triggers_start, ConfigureTriggersFilter())
+    dp.register_message_handler(configure_triggers_start, text_startswith="⚙", state="*")
+
     dp.register_callback_query_handler(restart_controller_bot, RestartControllerBotFilter())
 
     dp.register_callback_query_handler(current_triggers, CurrentTriggersFilter())
@@ -232,7 +236,7 @@ def register_configure_triggers_handlers(dp: Dispatcher):
     dp.register_message_handler(triggers_change_field, state=TriggersChangeStates.field)
     dp.register_message_handler(triggers_change_complete, state=TriggersChangeStates.complete)
 
-    dp.register_callback_query_handler(create_new_trigger, text="new_trigger")
+    dp.register_callback_query_handler(create_new_trigger, CreateTriggerFilter())
 
     dp.register_callback_query_handler(create_all_message_trigger, text="create_trigger_all_message")
     dp.register_message_handler(create_all_message_trigger_complete, state=AllMessageTriggerStates.start)

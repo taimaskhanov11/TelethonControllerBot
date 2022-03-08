@@ -16,13 +16,13 @@ class LangChoice(StatesGroup):
 @logger.catch
 async def start(message: types.Message, state: FSMContext):
     await state.finish()
-    await message.answer("Главное меню", reply_markup=main_menu.main_menu)
+    await message.answer("Главное меню", reply_markup=main_menu.main_menu_common)
 
 
-async def profile(call: types.CallbackQuery, db_user: DbUser):
+async def profile(message: types.Message, db_user: DbUser, state: FSMContext):
     # duration: datetime.timedelta = db_user.subscription.duration - datetime.datetime.now(TZ)
-
-    await call.message.answer(
+    await state.finish()
+    await message.answer(
         f"🔑 ID: {db_user.user_id}\n"
         f"👤 Логин: @{db_user.username}\n"
         f"💵 Вид подписки - {db_user.subscription.title}\n"
@@ -33,4 +33,5 @@ async def profile(call: types.CallbackQuery, db_user: DbUser):
 
 def register_common_handlers(dp: Dispatcher):
     dp.register_message_handler(start, commands="start", state="*")
-    dp.register_callback_query_handler(profile, ProfileFilter())
+    # dp.register_callback_query_handler(profile, ProfileFilter())
+    dp.register_message_handler(profile, text_startswith="👤", state="*")

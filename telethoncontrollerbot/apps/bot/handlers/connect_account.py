@@ -6,10 +6,12 @@ from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from loguru import logger
 
-from telethoncontrollerbot.apps.controller.controller import Controller
+from telethoncontrollerbot.apps.bot.filters.triggers_filters import ConnectAccountFilter, UnlinkAccountFilter
+from telethoncontrollerbot.apps.bot.markups import trigger_menu
+from telethoncontrollerbot.apps.controller.controller import Controller, delete_session
 from telethoncontrollerbot.apps.controller.session_data import SESSION_TASKS
 from telethoncontrollerbot.config.config import TEMP_DATA
-from telethoncontrollerbot.db.models import DbUser
+from telethoncontrollerbot.db.models import DbUser, Account
 
 queue = multiprocessing.Queue()
 
@@ -46,13 +48,7 @@ async def connect_account_number(message: types.Message, db_user: DbUser, state:
     )
     task = asyncio.create_task(client.start(new=True))
     SESSION_TASKS[db_user.user_id] = task
-    # Thread(target=start_controller, args=(client.start, )).start()
-    # Process(
-    #     target=start_controller, args=(
-    #         db_user.user_id, db_user.username, number, api_id, api_hash, queue)
-    # ).start()
 
-    # await state.update_data(queue=queue)
     await ConnectAccountStates.next()
 
     await message.answer(
@@ -67,22 +63,36 @@ async def connect_account_code(message: types.Message, db_user: DbUser, state: F
     TEMP_DATA[db_user.user_id] = code
 
     await message.answer("Код получен, ожидайте завершения\n Вам придет сообщение в личный чат.")
-    # data = await state.get_data()
-    # queue: multiprocessing.Queue = data["queue"]
-    # queue.put_nowait(code)
 
-    # account = await Account.create(
-    #     api_id=data["api_id"],
-    #     api_hash=data["api_hash"],
-    #     number=data["number"],
-    # )
-    # db_user.account = account
-    # await db_user.save()
     await state.finish()
 
 
+async def unlink_account(call: types.CallbackQuery, db_user: DbUser):
+    task = SESSION_TASKS.get(db_user.user_id)
+    if task:
+        task.cancel()
+        del SESSION_TASKS[db_user.user_id]
+
+    # delete_session(db_user.user_id)
+    db_user = await DbUser.get(user_id=db_user.user_id).select_related("account")
+    await db_user.account.delete()
+    db_user.account = None
+    await db_user.save()
+
+    await call.message.edit_reply_markup(trigger_menu.get_trigger_menu(db_user))
+    # print(db_user.account)
+    # await call.message.delete()
+    await call.message.answer(
+        "Аккаунт успешно отвязан",
+        # reply_markup=trigger_menu.get_trigger_menu(db_user)
+    )
+
+
 def register_connect_account_handlers(dp: Dispatcher):
-    dp.register_callback_query_handler(connect_account, text="connect_account")
+    dp.register_callback_query_handler(connect_account, ConnectAccountFilter())
+    dp.register_callback_query_handler(unlink_account, UnlinkAccountFilter())
+
+    # dp.register_callback_query_handler(unlink_account, text="unlink_account")
     # dp.register_message_handler(connect_account_api_id, state=ConnectAccountStates.api_id)
     # dp.register_message_handler(connect_account_api_hash, state=ConnectAccountStates.api_hash)
     dp.register_message_handler(connect_account_number, state=ConnectAccountStates.number)
