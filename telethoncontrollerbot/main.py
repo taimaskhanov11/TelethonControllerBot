@@ -34,7 +34,7 @@ async def set_commands(bot: Bot):
 
 
 async def main():
-    init_logging(old_logger=True, level=logging.DEBUG)
+    init_logging(old_logger=True, level=logging.DEBUG, steaming=False)
     # Настройка логирования в stdout
     # logging.basicConfig(
     #     level=logging.INFO,

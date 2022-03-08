@@ -93,7 +93,7 @@ async def init_triggers():
         triggers = [Trigger(**dict(tr)) for tr in await colltriger.triggers.all()]
         tc = TriggerCollection(**dict(colltriger), triggers=triggers)
         TRIGGERS_COLLECTION[colltriger.db_user.user_id] = tc
-        print(tc)
+        # print(tc)
     pass
 
 

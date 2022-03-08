@@ -10,9 +10,10 @@ LOG_DIR = Path(Path(BASE_DIR, "logs"))
 LOG_DIR.mkdir(exist_ok=True)
 
 
-def init_logging(old_logger=False, level=logging.INFO):
+def init_logging(old_logger=False, level=logging.INFO, steaming=True):
     log.remove()
-    log.add(sink=sys.stderr, level="TRACE", enqueue=True, diagnose=True)
+    if steaming:
+        log.add(sink=sys.stderr, level="TRACE", enqueue=True, diagnose=True)
     log.add(
         sink=Path(LOG_DIR, "main.log"),
         level="TRACE",
@@ -43,18 +44,17 @@ def init_logging(old_logger=False, level=logging.INFO):
         # logging.basicConfig(
         #     handlers=[InterceptHandler()], level=1
         # )
+
+        handlers = [logging.FileHandler(filename=Path(LOG_DIR, "telethon.log"), encoding="utf-8")]
+        if steaming:
+            handlers.append(logging.StreamHandler())
         logging.basicConfig(
             encoding="utf-8",
             level=level,
             format="{levelname} [{asctime}] {name}: {message}",
             style="{",
-            handlers=[
-                logging.StreamHandler(),
-                # InterceptHandler(),
-                logging.FileHandler(filename=Path(LOG_DIR, "telethon.log"), encoding="utf-8"),
-            ],
+            handlers=handlers,
         )
-
 
 # logging.basicConfig(format='[%(levelname) 5s/%(asctime)s] %(name)s: %(message)s',
 #                     level=logging.INFO)

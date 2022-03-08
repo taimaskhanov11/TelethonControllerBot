@@ -58,7 +58,7 @@ async def restart_controller_bot(call: types.CallbackQuery):
 async def current_triggers(call: types.CallbackQuery, db_user: DbUser):
     try:
         tr_col = TRIGGERS_COLLECTION[db_user.user_id]
-        print(tr_col)
+        # print(tr_col)
         await call.message.answer(
             f"{str(tr_col)}",
             # reply_markup=triggers_choice(len(tr_col.triggers))
