@@ -49,23 +49,28 @@ async def create_subscribe(call: types.CallbackQuery, db_user: DbUser):
     logger.critical(db_user)
     bill_db = await Billing.get_or_none(db_user=db_user).select_related("subscription")
     if bill_db:
-        bill = await YooPayment.get(bill_db.bill_id)
-        await call.message.delete()
-        await call.message.answer(
-            f"❗️Ожидание оплаты предыдущей подписки\n" f"{bill_db.subscription.title}",
-            reply_markup=get_subscribe_payment(bill.confirmation.confirmation_url),
-        )
-    else:
-        sub_info = SUBSCRIPTIONS_INFO.get(int(re.findall(r"_(\d*)", call.data)[0]))
-        payment = await YooPayment.create_payment(sub_info.title, sub_info.price)
-        db_bill = await Billing.create_bill(db_user, payment.id, sub_info)  # todo 2/26/2022 7:07 PM taima:
+        try:
+            bill = await YooPayment.get(bill_db.bill_id)
+            await call.message.delete()
+            await call.message.answer(
+                f"❗️Ожидание оплаты предыдущей подписки\n" f"{bill_db.subscription.title}",
+                reply_markup=get_subscribe_payment(bill.confirmation.confirmation_url),
+            )
+            return
+        except Exception as e:
+            logger.critical(e)
+            await bill_db.delete()
+            await bill_db.subscription.delete()
+    sub_info = SUBSCRIPTIONS_INFO.get(int(re.findall(r"_(\d*)", call.data)[0]))
+    payment = await YooPayment.create_payment(sub_info.title, sub_info.price)
+    db_bill = await Billing.create_bill(db_user, payment.id, sub_info)  # todo 2/26/2022 7:07 PM taima:
 
-        await call.message.delete()
-        await call.message.answer(
-            f"✅ Счёт на оплату {sub_info.title} сформирован.\n",
-            reply_markup=get_subscribe_payment(payment.confirmation.confirmation_url),
-        )
-        # await check_payment(bill.bill_id, db_user.user_id)
+    # await call.message.delete()
+    await call.message.answer(
+        f"✅ Счёт на оплату {sub_info.title} сформирован.\n",
+        reply_markup=get_subscribe_payment(payment.confirmation.confirmation_url),
+    )
+    # await check_payment(bill.bill_id, db_user.user_id)
 
 
 @logger.catch
