@@ -3,6 +3,7 @@ import datetime
 
 from loguru import logger
 
+from telethoncontrollerbot.apps.controller.triggers_data import TRIGGERS_COLLECTION
 from telethoncontrollerbot.config.config import TZ
 from telethoncontrollerbot.db.db_main import init_tortoise
 from telethoncontrollerbot.db.models import Subscription
@@ -33,6 +34,8 @@ async def everyday_processes(start=True):
                     sub.duration -= 1
                     # Проверка подписки
                     if sub.duration == 0:
+                        if sub.db_user.user_id in TRIGGERS_COLLECTION:
+                            del TRIGGERS_COLLECTION[sub.db_user.user_id]
                         logger.debug(f"Подписка закончилась {repr(sub.db_user)} ")
                         # await bot.send_message(sub.db_user.user_id, f"Подписка {sub.title} закончилась")
                         await bot.send_message(sub.db_user.user_id, f"Подписка закончилась")

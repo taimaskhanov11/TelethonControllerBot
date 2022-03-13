@@ -173,7 +173,8 @@ async def create_all_message_trigger_complete(message: types.Message, db_user: D
         logger.info(f"Обновлен текст коллекции триггеров {db_user.user_id}")
         answer = f"Успешно обновлен текст коллекции триггеров {db_user.user_id}"
     else:
-        db_trigger_coll = await DbTriggerCollection.create(db_user=db_user, all_message_answer=text)
+        db_trigger_coll, is_created = await DbTriggerCollection.get_or_create(db_user=db_user,
+                                                                             defaults={"all_message_answer": text})
         trigger_coll = TriggerCollection(**dict(db_trigger_coll))
         TRIGGERS_COLLECTION[db_user.user_id] = trigger_coll
         logger.info(f"Создана новая коллекция триггеров {db_user.user_id}")
@@ -204,7 +205,8 @@ async def create_phrases_trigger_complete(message: types.Message, db_user: DbUse
     if trigger_coll:
         db_trigger_coll = await DbTriggerCollection.get(id=trigger_coll.id)
     else:
-        db_trigger_coll = await DbTriggerCollection.create(db_user=db_user)
+        db_trigger_coll, is_created = await DbTriggerCollection.get_or_create(db_user=db_user)
+
         trigger_coll = TriggerCollection(**dict(db_trigger_coll))
         TRIGGERS_COLLECTION[db_user.user_id] = trigger_coll
         logger.info(f"Создана новая коллекция триггеров {db_user.user_id}")

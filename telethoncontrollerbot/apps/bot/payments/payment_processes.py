@@ -3,7 +3,8 @@ from datetime import datetime
 from loguru import logger
 
 from telethoncontrollerbot.apps.bot.payments.yookassa_async import YooPayment
-from telethoncontrollerbot.db.models import Billing, TZ, DbPayment
+from telethoncontrollerbot.apps.controller.triggers_data import TRIGGERS_COLLECTION, TriggerCollection
+from telethoncontrollerbot.db.models import Billing, TZ, DbPayment, DbTriggerCollection
 from telethoncontrollerbot.loader import bot
 
 
@@ -27,6 +28,12 @@ async def check_payment(bill_id, db_user):  # todo 2/28/2022 8:53 PM taima: по
             logger.info("Обновлена существующая подписка")
             await bot.send_message(db_user.user_id, "Обновлена существующая подписка")
 
+            tr_col = TRIGGERS_COLLECTION.get(db_user.from_user.id)
+            if not tr_col:
+                db_trigger_coll = await DbTriggerCollection.get_or_none(db_user=db_user)
+                if db_trigger_coll:
+                    trigger_coll = TriggerCollection(**dict(db_trigger_coll))
+                    TRIGGERS_COLLECTION[db_user.user_id] = trigger_coll
         else:
             db_bill.subscription.is_paid = True
             db_bill.subscription.is_subscribe = True
@@ -38,6 +45,8 @@ async def check_payment(bill_id, db_user):  # todo 2/28/2022 8:53 PM taima: по
             await db_bill.delete()
             await old_sub.delete()
             logger.info("Создана новая подписка")
+
+
 
         logger.info("Информация о подписке успешно обновлена")
 
