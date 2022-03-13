@@ -18,7 +18,7 @@ async def check_payment(bill_id, db_user):  # todo 2/28/2022 8:53 PM taima: по
 
         await DbPayment.create(db_user=db_user, date=datetime.now(TZ), amount=db_bill.amount)
         if db_user.subscription.title == db_bill.subscription.title:
-            db_user.subscription.duration += db_bill.subscription.days_duration
+            db_user.subscription.duration += db_bill.subscription.duration
 
             await db_user.subscription.save()
             await db_user.save()
