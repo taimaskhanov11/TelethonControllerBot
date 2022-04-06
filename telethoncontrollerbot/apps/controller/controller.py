@@ -117,7 +117,7 @@ class Controller(BaseModel):
                     pass
                 else:
                     trigger_collection = TRIGGERS_COLLECTION[self.user_id]
-                    if trigger_collection.all_message_answer or trigger_collection.reply_to_phrases:
+                    if trigger_collection.reply_to_all or trigger_collection.reply_to_phrases:
                         # message:patched.Message = event.message
                         logger.debug(f"Поиск ответа -> {event.message.text}")
                         logger.trace(event)
