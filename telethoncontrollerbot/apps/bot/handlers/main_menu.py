@@ -3,7 +3,6 @@ from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from loguru import logger
 
-from telethoncontrollerbot.apps.bot.filters.main_menu_filters import ProfileFilter
 from telethoncontrollerbot.apps.bot.markups import main_menu
 from telethoncontrollerbot.apps.bot.markups.subscribe_menu import renew_subscription
 from telethoncontrollerbot.db.models import DbUser

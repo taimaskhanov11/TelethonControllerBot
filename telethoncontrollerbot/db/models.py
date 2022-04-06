@@ -102,6 +102,6 @@ class DbTriggerCollection(models.Model):
 
 
 class DbTrigger(models.Model):
-    phrases = fields.TextField()  # list
+    phrases = fields.JSONField()  # list
     answer = fields.TextField()
     trigger_collection = fields.ForeignKeyField("models.DbTriggerCollection", related_name="triggers")

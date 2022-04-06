@@ -12,8 +12,5 @@ main_menu = InlineKeyboardMarkup(
 )
 
 main_menu_common = ReplyKeyboardMarkup(
-    [[btn[0] for btn in _main_menu_buttons[:2]],
-     ["⚙ Настроить триггеры"]
-     ],
-    resize_keyboard=True
+    [[btn[0] for btn in _main_menu_buttons[:2]], ["⚙ Настроить триггеры"]], resize_keyboard=True
 )

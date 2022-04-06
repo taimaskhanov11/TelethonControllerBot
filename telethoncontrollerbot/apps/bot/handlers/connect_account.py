@@ -8,10 +8,10 @@ from loguru import logger
 
 from telethoncontrollerbot.apps.bot.filters.triggers_filters import ConnectAccountFilter, UnlinkAccountFilter
 from telethoncontrollerbot.apps.bot.markups import trigger_menu
-from telethoncontrollerbot.apps.controller.controller import Controller, delete_session
+from telethoncontrollerbot.apps.controller.controller import Controller
 from telethoncontrollerbot.apps.controller.session_data import SESSION_TASKS
 from telethoncontrollerbot.config.config import TEMP_DATA
-from telethoncontrollerbot.db.models import DbUser, Account
+from telethoncontrollerbot.db.models import DbUser
 
 queue = multiprocessing.Queue()
 
@@ -37,24 +37,27 @@ async def connect_account(call: types.CallbackQuery):
 
 async def connect_account_number(message: types.Message, db_user: DbUser, state: FSMContext):
     # data = await state.get_data()
+    try:
+        api_id, api_hash, number = message.text.split(":")
+        api_id, api_hash, number = api_id.strip(), api_hash.strip(), number.strip()
 
-    api_id, api_hash, number = message.text.split(":")
-    api_id, api_hash, number = api_id.strip(), api_hash.strip(), number.strip()
+        await state.update_data(api_id=int(api_id), api_hash=api_hash, number=number)
+        logger.info(f"{db_user.username}| Полученные данные {api_id}|{api_hash}|{number}")
+        client = Controller(
+            user_id=db_user.user_id, username=db_user.username, number=number, api_id=api_id, api_hash=api_hash
+        )
+        task = asyncio.create_task(client.start(new=True))
+        SESSION_TASKS[db_user.user_id] = task
 
-    await state.update_data(api_id=int(api_id), api_hash=api_hash, number=number)
-    logger.info(f"{db_user.username}| Полученные данные {api_id}|{api_hash}|{number}")
-    client = Controller(
-        user_id=db_user.user_id, username=db_user.username, number=number, api_id=api_id, api_hash=api_hash
-    )
-    task = asyncio.create_task(client.start(new=True))
-    SESSION_TASKS[db_user.user_id] = task
+        await ConnectAccountStates.next()
 
-    await ConnectAccountStates.next()
-
-    await message.answer(
-        "Введите код подтверждения из сообщения Телеграмм с префиксом omega, в таком виде omega<ваш код>, Например:\n"
-        "omega43123"
-    )
+        await message.answer(
+            "Введите код подтверждения из сообщения Телеграмм с префиксом omega, в таком виде omega<ваш код>, Например:\n"
+            "omega43123"
+        )
+    except Exception as e:
+        logger.critical(e)
+        await message.answer("Неправильный ввод")
 
 
 async def connect_account_code(message: types.Message, db_user: DbUser, state: FSMContext):

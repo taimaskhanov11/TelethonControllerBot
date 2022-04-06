@@ -1,4 +1,3 @@
-
 import asyncio
 import logging
 
@@ -20,8 +19,10 @@ from telethoncontrollerbot.apps.bot.utils.subscription_info import init_subscrip
 from telethoncontrollerbot.apps.controller.session_data import init_sessions
 from telethoncontrollerbot.apps.controller.settings import init_logging
 from telethoncontrollerbot.apps.controller.triggers_data import init_triggers
+from telethoncontrollerbot.config import config
 from telethoncontrollerbot.db.db_main import init_tortoise
 from telethoncontrollerbot.loader import dp, bot
+
 
 # Регистрация команд, отображаемых в интерфейсе Telegram
 async def set_commands(bot: Bot):
@@ -34,23 +35,12 @@ async def set_commands(bot: Bot):
 
 
 async def main():
-    init_logging(old_logger=True, level=logging.DEBUG, steaming=False)
     # Настройка логирования в stdout
-    # logging.basicConfig(
-    #     level=logging.INFO,
-    #     format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
-    # )
-    logger.info("Starting bot")
-    # Парсинг файла конфигурации
-    # config = load_config("config/bot.ini")
 
-    # Объявление и инициализация объектов бота и диспетчера
-    # bot = Bot(token=TG_TOKEN)
-    # dp = Dispatcher(bot, storage=MemoryStorage())
-    print((await bot.get_me()).username)
-
-    # Меню админа
-    # register_admin_handlers(dp)
+    init_logging(old_logger=True, level="INFO", old_level=logging.INFO, steaming=True)
+    bot_info = await bot.get_me()
+    logger.info(f"Starting bot {bot_info.username}")
+    config.BOT_ID = bot_info.id
 
     # Регистрация хэндлеров
     register_common_handlers(dp)

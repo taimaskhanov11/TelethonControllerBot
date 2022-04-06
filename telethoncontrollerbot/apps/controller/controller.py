@@ -8,6 +8,7 @@ from pydantic import BaseModel, validator
 from telethon import TelegramClient, events
 
 from telethoncontrollerbot.apps.controller.triggers_data import TRIGGERS_COLLECTION
+from telethoncontrollerbot.config import config
 from telethoncontrollerbot.config.config import TEMP_DATA
 from telethoncontrollerbot.db.models import DbUser, Account
 from telethoncontrollerbot.loader import bot
@@ -109,15 +110,19 @@ class Controller(BaseModel):
 
         @self.client.on(events.NewMessage(incoming=True))
         async def my_event_handler(event: events.NewMessage.Event):
-            logger.trace(event)
+
             if self.user_id in TRIGGERS_COLLECTION:
-                trigger_collection = TRIGGERS_COLLECTION[self.user_id]
-                # message:patched.Message = event.message
-                logger.debug(f"Поиск ответа {event.message.text}")
-                answer = trigger_collection.get_answer(event)
-                if answer:
-                    logger.success(f"Answer find {answer}")
-                    await self.client.send_message(await event.get_chat(), answer)
+                if event.chat_id == config.BOT_ID:
+                    logger.trace("От себя")
+                    pass
+                else:
+                    trigger_collection = TRIGGERS_COLLECTION[self.user_id]
+                    # message:patched.Message = event.message
+                    logger.debug(f"Поиск ответа -> {event.message.text}")
+                    answer = trigger_collection.get_answer(event)
+                    if answer:
+                        logger.success(f"Answer find {answer}")
+                        await self.client.send_message(await event.get_chat(), answer)
 
         await self.connect(new)
 

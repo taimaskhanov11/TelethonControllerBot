@@ -46,8 +46,6 @@ async def check_payment(bill_id, db_user):  # todo 2/28/2022 8:53 PM taima: по
             await old_sub.delete()
             logger.info("Создана новая подписка")
 
-
-
         logger.info("Информация о подписке успешно обновлена")
 
     elif bill.status == "canceled":

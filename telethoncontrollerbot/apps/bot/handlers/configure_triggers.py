@@ -7,12 +7,11 @@ from aiogram.types import ReplyKeyboardRemove
 from loguru import logger
 
 from telethoncontrollerbot.apps.bot.filters.triggers_filters import (
-    ConfigureTriggersFilter,
     CurrentTriggersFilter,
-    RestartControllerBotFilter, CreateTriggerFilter,
+    RestartControllerBotFilter,
+    CreateTriggerFilter,
 )
 from telethoncontrollerbot.apps.bot.markups import trigger_menu
-from telethoncontrollerbot.apps.bot.markups.subscribe_menu import get_subscribe_menu_view
 from telethoncontrollerbot.apps.bot.markups.trigger_menu import triggers_choice, triggers_fields
 from telethoncontrollerbot.apps.controller.triggers_data import TRIGGERS_COLLECTION, Trigger, TriggerCollection
 from telethoncontrollerbot.db.models import DbUser, DbTrigger, DbTriggerCollection
@@ -80,7 +79,6 @@ async def change_trigger_status(call: types.CallbackQuery):
     setattr(db_trigger_coll, field, not status)
     await db_trigger_coll.save()
     # await call.message.answer("Данные обновлены")
-
     await call.message.edit_text(f"{str(tr_col)}\n\n")
     await call.message.edit_reply_markup(trigger_menu.change_trigger_status(tr_col))
 
@@ -89,7 +87,7 @@ async def change_trigger_status(call: types.CallbackQuery):
 
 async def triggers_change_start(call: types.CallbackQuery):
     tr_col = TRIGGERS_COLLECTION[call.from_user.id]
-    await call.message.delete()
+    # await call.message.delete()
     await call.message.answer(
         "Выберите цифру триггера для изменения\n" "Для отмены нажмите /start",
         reply_markup=triggers_choice(len(tr_col.triggers), True),
@@ -105,7 +103,7 @@ async def triggers_change_choice(message: types.Message, state: FSMContext):
         await AllMessageAnswerChangeStates.start.set()
         return
     trigger = TRIGGERS_COLLECTION[message.from_user.id].triggers[number - 1]
-    await state.update_data(trigger=trigger)
+    await state.update_data(trigger=number)
     await message.answer(f"Выберите поле для изменения\n{trigger}", reply_markup=triggers_fields)
     await TriggersChangeStates.next()
 
@@ -136,7 +134,7 @@ async def triggers_change_field(message: types.Message, state: FSMContext):
 
 async def triggers_change_complete(message: types.Message, state: FSMContext):
     data = await state.get_data()
-    trigger = data["trigger"]
+    trigger = TRIGGERS_COLLECTION[message.from_user.id].triggers[data["trigger"] - 1]
     field = data["field"]
     new_value = message.text
     if field == "phrases":
@@ -146,9 +144,12 @@ async def triggers_change_complete(message: types.Message, state: FSMContext):
     db_trigger = await DbTrigger.get(id=trigger.id)
     setattr(db_trigger, field, new_value)
     await db_trigger.save(update_fields=[field])
-    logger.info(f"Trigger changed {new_value}{type(new_value)}")
+    logger.info(f"Trigger changed {field}|{new_value}|{type(new_value)}")
     trigger_coll = TRIGGERS_COLLECTION[message.from_user.id]
-    await message.answer(f"Данные обновлены\n{trigger}", reply_markup=trigger_menu.change_trigger_status(trigger_coll))
+    await state.finish()
+    await message.answer(
+        f"Данные обновлены\n{trigger_coll}", reply_markup=trigger_menu.change_trigger_status(trigger_coll)
+    )
 
 
 async def create_new_trigger(call: types.CallbackQuery):
@@ -164,7 +165,7 @@ async def create_all_message_trigger(call: types.CallbackQuery):
 @logger.catch
 async def create_all_message_trigger_complete(message: types.Message, db_user: DbUser, state: FSMContext):
     trigger_coll = TRIGGERS_COLLECTION.get(message.from_user.id)
-    text = message.text.lower()
+    text = message.text
     if trigger_coll:
         trigger_coll.all_message_answer = text
         db_trigger_coll = await DbTriggerCollection.get(id=trigger_coll.id)
@@ -173,8 +174,9 @@ async def create_all_message_trigger_complete(message: types.Message, db_user: D
         logger.info(f"Обновлен текст коллекции триггеров {db_user.user_id}")
         answer = f"Успешно обновлен текст коллекции триггеров {db_user.user_id}"
     else:
-        db_trigger_coll, is_created = await DbTriggerCollection.get_or_create(db_user=db_user,
-                                                                             defaults={"all_message_answer": text})
+        db_trigger_coll, is_created = await DbTriggerCollection.get_or_create(
+            db_user=db_user, defaults={"all_message_answer": text}
+        )
         trigger_coll = TriggerCollection(**dict(db_trigger_coll))
         TRIGGERS_COLLECTION[db_user.user_id] = trigger_coll
         logger.info(f"Создана новая коллекция триггеров {db_user.user_id}")
@@ -199,7 +201,7 @@ async def create_phrases_trigger_answer(message: types.Message, state: FSMContex
 async def create_phrases_trigger_complete(message: types.Message, db_user: DbUser, state: FSMContext):
     # do something #todo 3/5/2022 3:29 PM taima:
     trigger_coll = TRIGGERS_COLLECTION.get(message.from_user.id)
-    text = message.text.lower()
+    text = message.text
     data = await state.get_data()
 
     if trigger_coll:
@@ -210,8 +212,8 @@ async def create_phrases_trigger_complete(message: types.Message, db_user: DbUse
         trigger_coll = TriggerCollection(**dict(db_trigger_coll))
         TRIGGERS_COLLECTION[db_user.user_id] = trigger_coll
         logger.info(f"Создана новая коллекция триггеров {db_user.user_id}")
-
-    db_trigger = await DbTrigger.create(phrases=data["phrases"], trigger_collection=db_trigger_coll, answer=text)
+    phrases = list(map(lambda x: x.strip(), data["phrases"].split(",")))
+    db_trigger = await DbTrigger.create(phrases=phrases, trigger_collection=db_trigger_coll, answer=text)
 
     trigger = Trigger(**dict(db_trigger))
     trigger_coll.triggers.append(trigger)

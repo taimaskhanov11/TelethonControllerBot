@@ -1,7 +1,8 @@
 import asyncio
 from typing import Optional
 
-from pydantic import BaseModel, Field, validator, root_validator
+from loguru import logger
+from pydantic import BaseModel, Field, validator
 from telethon import events
 
 from telethoncontrollerbot.db.db_main import init_tortoise
@@ -19,13 +20,14 @@ class Trigger(BaseModel):
             if value[0] == "[":
                 return list(map(lambda x: x.strip(), value[1:-1].split(",")))
             return list(map(lambda x: x.strip(), value.split(",")))
+        logger.trace(f"Не str({value} {type(value)})")
         return value
 
-    @root_validator
-    def to_lower(cls, values):
-        values["phrases"] = list(map(lambda x: x.lower(), values["phrases"]))
-        values["answer"] = values["answer"].lower()
-        return values
+    # @root_validator
+    # def to_lower(cls, values):
+    #     values["phrases"] = list(map(lambda x: x.lower(), values["phrases"]))
+    #     values["answer"] = values["answer"].lower()
+    #     return values
 
     def __str__(self):
         return f"➡️Фразы: {', '.join(self.phrases)}\n" f"⬅️Текст ответа: {self.answer}"
@@ -44,13 +46,25 @@ class TriggerCollection(BaseModel):
 
     def get_answer(self, event: events.NewMessage.Event):
         check = True
-
+        channel = False
+        group = False
         if event.is_channel:
+            channel = True
             if not self.reply_to_channels:
                 check = False
+                logger.trace(f"{self.id}|Сообщение из канала. Ответ отключен")
+            else:
+                logger.trace(f"{self.id}|Сообщение из канала. Ответ включен")
         elif event.is_group:
+            group = True
             if not self.reply_to_groups:
                 check = False
+                logger.trace(f"{self.id}|Сообщение из группы. Ответ отключен")
+            else:
+                logger.trace(f"{self.id}|Сообщение из группы. Ответ включен")
+
+        if not any([channel, group]):
+            logger.trace(f"{self.id}|Сообщение из приватного чата")
 
         if check:
             text = event.message.text.lower()
@@ -58,11 +72,18 @@ class TriggerCollection(BaseModel):
                 if self.triggers:
                     for phrase_object in self.triggers:
                         for phrase in phrase_object.phrases:
-                            if phrase in text:
+                            if phrase.lower() in text:
+                                logger.success(
+                                    f"Ответ на фразы найден {event.message.text} -> {self.all_message_answer}"
+                                )
                                 return phrase_object.answer
 
             if self.reply_to_all:
+                logger.success(f"Ответ на все сообщения найден {event.message.text} -> {self.all_message_answer}")
                 return self.all_message_answer
+            logger.trace(f"Ответ не найден -> {event.message.text}")
+        else:
+            logger.debug("Не соответствует требованиям. Поиск отключен")
 
     def __str__(self):
         # triggers_str = '\n\n'.join(map(str, self.triggers))
@@ -87,7 +108,7 @@ TRIGGERS_COLLECTION: dict[int, TriggerCollection] = {}
 
 
 async def init_triggers():
-    await init_tortoise()
+    # await init_tortoise()
     for colltriger in await DbTriggerCollection.all().select_related("db_user"):
         # print(dict(colltriger))
         triggers = [Trigger(**dict(tr)) for tr in await colltriger.triggers.all()]

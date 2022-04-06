@@ -16,6 +16,7 @@ DB_PASSWORD = env.str("DB_PASSWORD")
 DB_HOST = env.str("DB_HOST")
 DB_PORT = env.int("DB_PORT")
 DB_DB_NAME = env.str("DB_DB_NAME")
+BOT_ID = None
 
 ADMINS = list(map(lambda x: int(x.strip()), env.list("ADMINS")))
 TZ = datetime.timezone(datetime.timedelta(hours=3))

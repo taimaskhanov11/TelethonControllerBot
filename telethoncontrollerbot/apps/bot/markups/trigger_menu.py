@@ -1,4 +1,4 @@
-from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup
 
 from telethoncontrollerbot.apps.controller.triggers_data import TriggerCollection
 
@@ -73,20 +73,3 @@ def change_trigger_status(tr_col: TriggerCollection):
             [InlineKeyboardButton(text=text, callback_data=data)] for text, data in _change_triggers_status_data
         ]
     )
-
-# _triggers_fields_data = [
-#     (),
-#     (),
-# ]
-#
-# triggers_fields = InlineKeyboardMarkup(
-#     inline_keyboard=[
-#         [
-#             InlineKeyboardButton(
-#                 text=text,
-#                 callback_data=data,
-#             )
-#         ]
-#         for text, data in _triggers_fields_data
-#     ]
-# )
