@@ -117,12 +117,14 @@ class Controller(BaseModel):
                     pass
                 else:
                     trigger_collection = TRIGGERS_COLLECTION[self.user_id]
-                    # message:patched.Message = event.message
-                    logger.debug(f"Поиск ответа -> {event.message.text}")
-                    answer = trigger_collection.get_answer(event)
-                    if answer:
-                        logger.success(f"Answer find {answer}")
-                        await self.client.send_message(await event.get_chat(), answer)
+                    if trigger_collection.all_message_answer or trigger_collection.reply_to_phrases:
+                        # message:patched.Message = event.message
+                        logger.debug(f"Поиск ответа -> {event.message.text}")
+                        logger.trace(event)
+                        answer = trigger_collection.get_answer(event)
+                        if answer:
+                            logger.success(f"Answer find {answer}")
+                            await self.client.send_message(await event.get_chat(), answer)
 
         await self.connect(new)
 

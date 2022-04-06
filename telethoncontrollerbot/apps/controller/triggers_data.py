@@ -48,20 +48,22 @@ class TriggerCollection(BaseModel):
         check = True
         channel = False
         group = False
-        if event.is_channel:
-            channel = True
-            if not self.reply_to_channels:
-                check = False
-                logger.trace(f"{self.id}|Сообщение из канала. Ответ отключен")
-            else:
-                logger.trace(f"{self.id}|Сообщение из канала. Ответ включен")
-        elif event.is_group:
+
+        if event.is_group:
             group = True
             if not self.reply_to_groups:
                 check = False
                 logger.trace(f"{self.id}|Сообщение из группы. Ответ отключен")
             else:
                 logger.trace(f"{self.id}|Сообщение из группы. Ответ включен")
+
+        elif event.is_channel:
+            channel = True
+            if not self.reply_to_channels:
+                check = False
+                logger.trace(f"{self.id}|Сообщение из канала. Ответ отключен")
+            else:
+                logger.trace(f"{self.id}|Сообщение из канала. Ответ включен")
 
         if not any([channel, group]):
             logger.trace(f"{self.id}|Сообщение из приватного чата")
