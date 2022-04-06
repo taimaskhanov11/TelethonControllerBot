@@ -65,7 +65,9 @@ def change_trigger_status(tr_col: TriggerCollection):
             f"{'Отключить' if tr_col.reply_to_channels else 'Включить'} ответ на сообщения из каналов",
             "change_trigger_status_reply_to_channels",
         ),
+        ("Создать новый триггер", "new_trigger"),
         ("Изменить данные", "change_triggers"),
+        ("Удалить триггер", "delete_triggers"),
     ]
 
     return InlineKeyboardMarkup(

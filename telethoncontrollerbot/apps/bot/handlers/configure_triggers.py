@@ -32,6 +32,10 @@ class TriggersChangeStates(StatesGroup):
     complete = State()
 
 
+class TriggersDeleteStates(StatesGroup):
+    delete = State()
+
+
 class AllMessageAnswerChangeStates(StatesGroup):
     start = State()
 
@@ -83,6 +87,41 @@ async def change_trigger_status(call: types.CallbackQuery):
     await call.message.edit_reply_markup(trigger_menu.change_trigger_status(tr_col))
 
     # await call.message.answer("Данные обновлены", reply_markup=trigger_menu.change_trigger_status(tr_col))
+
+
+async def triggers_delete_start(call: types.CallbackQuery):
+    tr_col = TRIGGERS_COLLECTION[call.from_user.id]
+    # await call.message.delete()
+    await call.message.answer(
+        "Выберите цифру триггера для удаления\n" "Для отмены нажмите /start",
+        reply_markup=triggers_choice(len(tr_col.triggers), True),
+    )
+    # reply_markup=triggers_choice(27))
+    await TriggersDeleteStates.first()
+
+
+async def triggers_delete_start_done(message: types.Message, state: FSMContext):
+    try:
+        tr_col = TRIGGERS_COLLECTION[message.from_user.id]
+        # await call.message.delete()
+        number = int(message.text)
+        if number == 0:
+            await message.answer(f"Нажмите на кнопки ниже", reply_markup=triggers_choice(len(tr_col.triggers), True))
+            return
+        trigger = tr_col.triggers[number - 1]
+        tr_col.triggers.pop(number - 1)
+        db_trigger = await DbTrigger.get(id=trigger.id)
+        await db_trigger.delete()
+        await message.answer(
+            f"Триггер успешно удален\n{tr_col}",
+            reply_markup=trigger_menu.change_trigger_status(tr_col)
+        )
+        await state.finish()
+    except Exception as e:
+        logger.critical(e)
+        await message.answer(
+            "Неправильный ввод, Для отмены нажмите /start",
+        )
 
 
 async def triggers_change_start(call: types.CallbackQuery):
@@ -236,6 +275,10 @@ def register_configure_triggers_handlers(dp: Dispatcher):
 
     dp.register_callback_query_handler(triggers_change_start, text="change_triggers")
     dp.register_message_handler(triggers_change_choice, state=TriggersChangeStates.choice)
+
+    dp.register_callback_query_handler(triggers_delete_start, text="delete_triggers")
+    dp.register_message_handler(triggers_delete_start_done, state=TriggersDeleteStates.delete)
+
     dp.register_message_handler(all_message_answer_change, state=AllMessageAnswerChangeStates.start)
     dp.register_message_handler(triggers_change_field, state=TriggersChangeStates.field)
     dp.register_message_handler(triggers_change_complete, state=TriggersChangeStates.complete)
