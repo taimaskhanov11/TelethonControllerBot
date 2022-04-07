@@ -37,7 +37,7 @@ async def set_commands(bot: Bot):
 async def main():
     # Настройка логирования в stdout
 
-    init_logging(old_logger=True, level="INFO", old_level=logging.INFO, steaming=True)
+    init_logging(old_logger=True, level="TRACE", old_level=logging.INFO, steaming=True, write=True)
     bot_info = await bot.get_me()
     logger.info(f"Starting bot {bot_info.username}")
     config.BOT_ID = bot_info.id
