@@ -52,8 +52,8 @@ async def connect_account_number(message: types.Message, db_user: DbUser, state:
         await ConnectAccountStates.next()
 
         await message.answer(
-            "Введите код подтверждения из сообщения Телеграмм с префиксом omega, в таком виде omega<ваш код>, Например:\n"
-            "omega43123"
+            "Введите код подтверждения из сообщения Телеграмм с префиксом code, в таком виде code<ваш код>, Например:\n"
+            "code43123"
         )
     except Exception as e:
         logger.critical(e)
