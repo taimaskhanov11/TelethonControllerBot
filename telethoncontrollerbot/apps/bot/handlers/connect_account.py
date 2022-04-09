@@ -62,7 +62,7 @@ async def connect_account_number(message: types.Message, db_user: DbUser, state:
 
 async def connect_account_code(message: types.Message, db_user: DbUser, state: FSMContext):
     # code = message.text.replace("t", "")
-    code = message.text.replace("omega", "")
+    code = message.text.replace("code", "")
     TEMP_DATA[db_user.user_id] = code
 
     await message.answer("Код получен, ожидайте завершения\n Вам придет сообщение в личный чат.")
