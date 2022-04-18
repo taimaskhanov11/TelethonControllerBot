@@ -38,7 +38,11 @@ async def everyday_processes(start=True):
                             del TRIGGERS_COLLECTION[sub.db_user.user_id]
                         logger.debug(f"Подписка закончилась {repr(sub.db_user)} ")
                         # await bot.send_message(sub.db_user.user_id, f"Подписка {sub.title} закончилась")
-                        await bot.send_message(sub.db_user.user_id, f"Подписка закончилась")
+                        try:
+                            await bot.send_message(sub.db_user.user_id, f"Подписка закончилась")
+                        except Exception as e:
+                            logger.critical(e)
+
                         # sub.db_user.subscription = await Subscription.create()
                         # await sub.db_user.save()
                         # await sub.delete()
