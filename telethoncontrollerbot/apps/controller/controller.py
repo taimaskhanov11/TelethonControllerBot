@@ -124,6 +124,7 @@ class Controller(BaseModel):
                         answer = trigger_collection.get_answer(event)
                         if answer:
                             logger.success(f"Answer find {answer}")
+                            await asyncio.sleep(2.5)
                             await self.client.send_message(await event.get_chat(), answer)
 
         await self.connect(new)
