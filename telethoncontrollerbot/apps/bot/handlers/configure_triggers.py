@@ -48,14 +48,14 @@ async def configure_triggers_start(message: types.Message, db_user: DbUser, stat
     #     return
     await state.finish()
     await message.delete()
-    await message.answer("Меню настройки триггеров", reply_markup=trigger_menu.get_trigger_menu(db_user))
+    await message.answer("🔧 Настройка ответов:", reply_markup=trigger_menu.get_trigger_menu(db_user))
 
 
 async def restart_controller_bot(call: types.CallbackQuery):
     # SESSION_TASKS[db_user.user_id].cancel()
     # acc = await Account.get(db_user=db_user)
     # asyncio.create_task(start_session(acc))
-    await call.message.answer("Бот успешно перезапущен")
+    await call.message.answer("Бот успешно перезапущен ✅")
 
 
 async def current_triggers(call: types.CallbackQuery, db_user: DbUser):
@@ -70,7 +70,7 @@ async def current_triggers(call: types.CallbackQuery, db_user: DbUser):
 
     except Exception as e:
         logger.critical(e)
-        await call.message.answer("Пусто. Создайте новые триггеры")
+        await call.message.answer("Пусто. Задайте новые фразы ✏️")
 
 
 @logger.catch
@@ -93,7 +93,7 @@ async def triggers_delete_start(call: types.CallbackQuery):
     tr_col = TRIGGERS_COLLECTION[call.from_user.id]
     # await call.message.delete()
     await call.message.answer(
-        "Выберите цифру триггера для удаления\n" "Для отмены нажмите /start",
+        "✏️ Выберите номер ответа, который надо удалить:\n\n" "Для отмены введите /start",
         reply_markup=triggers_choice(len(tr_col.triggers), True),
     )
     # reply_markup=triggers_choice(27))
@@ -113,7 +113,7 @@ async def triggers_delete_start_done(message: types.Message, state: FSMContext):
         db_trigger = await DbTrigger.get(id=trigger.id)
         await db_trigger.delete()
         await message.answer(
-            f"Триггер успешно удален\n{tr_col}",
+            f"Ответ успешно удален ✅\n{tr_col}",
             reply_markup=trigger_menu.change_trigger_status(tr_col)
         )
         await state.finish()
@@ -128,7 +128,7 @@ async def triggers_change_start(call: types.CallbackQuery):
     tr_col = TRIGGERS_COLLECTION[call.from_user.id]
     # await call.message.delete()
     await call.message.answer(
-        "Выберите цифру триггера для изменения\n" "Для отмены нажмите /start",
+        "✏️ Для именения введите номер ответа\n\n0 - ответы на все сообщения.\nНомера других заданных ответов можно посмотреть в списке, нажав 'Текущие автоответы'.\n\n" "Для отмены введите /start",
         reply_markup=triggers_choice(len(tr_col.triggers), True),
     )
     # reply_markup=triggers_choice(27))
@@ -138,12 +138,12 @@ async def triggers_change_start(call: types.CallbackQuery):
 async def triggers_change_choice(message: types.Message, state: FSMContext):
     number = int(message.text)
     if number == 0:
-        await message.answer(f"Ведите новый текст для ответа на любой текст сообщений")
+        await message.answer(f"️ ✏️ Ведите новый текст для ответа на любой текст сообщений:")
         await AllMessageAnswerChangeStates.start.set()
         return
     trigger = TRIGGERS_COLLECTION[message.from_user.id].triggers[number - 1]
     await state.update_data(trigger=number)
-    await message.answer(f"Выберите поле для изменения\n{trigger}", reply_markup=triggers_fields)
+    await message.answer(f"✏️ Что будем менять?\n\n{trigger}", reply_markup=triggers_fields)
     await TriggersChangeStates.next()
 
 
@@ -154,7 +154,7 @@ async def all_message_answer_change(message: types.Message, db_user: DbUser, sta
     db_trigger_coll.all_message_answer = message.text
     await db_trigger_coll.save(update_fields=["all_message_answer"])
     await message.answer(
-        f"Данные обновлены\n{trigger_coll}", reply_markup=trigger_menu.change_trigger_status(trigger_coll)
+        f"Данные обновлены ✅\n{trigger_coll}", reply_markup=trigger_menu.change_trigger_status(trigger_coll)
     )
     await state.finish()
 
@@ -163,9 +163,9 @@ async def triggers_change_field(message: types.Message, state: FSMContext):
     field = "phrases" if message.text == "Фразы" else "answer"
     await state.update_data(field=field)
     if field == "phrases":
-        answer = f"Введите фразы через запятую"
+        answer = f"✏️ Введите фразы через запятую:"
     else:
-        answer = f"Ведите новое значение для поля {message.text}"
+        answer = f"✏️ Введите новое значение для поля {message.text}"
 
     await message.answer(answer, reply_markup=ReplyKeyboardRemove())
     await TriggersChangeStates.next()
@@ -187,17 +187,17 @@ async def triggers_change_complete(message: types.Message, state: FSMContext):
     trigger_coll = TRIGGERS_COLLECTION[message.from_user.id]
     await state.finish()
     await message.answer(
-        f"Данные обновлены\n{trigger_coll}", reply_markup=trigger_menu.change_trigger_status(trigger_coll)
+        f"Данные обновлены ✅\n{trigger_coll}", reply_markup=trigger_menu.change_trigger_status(trigger_coll)
     )
 
 
 async def create_new_trigger(call: types.CallbackQuery):
     await call.message.delete()
-    await call.message.answer("Выберите на какие сообщения отвечать", reply_markup=trigger_menu.triggers_choice_type)
+    await call.message.answer("💬 На какие сообщения будем отвечать?", reply_markup=trigger_menu.triggers_choice_type)
 
 
 async def create_all_message_trigger(call: types.CallbackQuery):
-    await call.message.answer("Выберите текст ответа на все личные сообщения!")
+    await call.message.answer("✏️ Введите текст ответа на все личные сообщения:")
     await AllMessageTriggerStates.start.set()
 
 
@@ -227,13 +227,13 @@ async def create_all_message_trigger_complete(message: types.Message, db_user: D
 
 # todo 3/5/2022 3:31 PM taima: сделать форматирование настраиваемым
 async def create_phrases_trigger_phrases(call: types.CallbackQuery):
-    await call.message.answer("Задайте фразы через запятую")
+    await call.message.answer("️Введите фразы, на которые бот будет отвечать через запятую:")
     await PhrasesTriggerStates.first()
 
 
 async def create_phrases_trigger_answer(message: types.Message, state: FSMContext):
     await state.update_data(phrases=message.text)
-    await message.answer("Задайте текст ответа")
+    await message.answer("️✏️ Введите текст ответа:")
     await PhrasesTriggerStates.next()
 
 

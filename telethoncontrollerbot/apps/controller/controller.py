@@ -6,7 +6,6 @@ from typing import Optional
 from loguru import logger
 from pydantic import BaseModel, validator
 from telethon import TelegramClient, events
-
 from telethoncontrollerbot.apps.controller.triggers_data import TRIGGERS_COLLECTION
 from telethoncontrollerbot.config import config
 from telethoncontrollerbot.config.config import TEMP_DATA
@@ -25,6 +24,7 @@ class Controller(BaseModel):
     api_id: int
     api_hash: str
     client: Optional[TelegramClient]
+    answered: Optional[list] = []
 
     @validator("client", always=True)
     def create_client(cls, value, values):
@@ -116,6 +116,8 @@ class Controller(BaseModel):
                     logger.trace("От себя")
                     pass
                 else:
+                    if event.chat_id in self.answered:
+                        return
                     trigger_collection = TRIGGERS_COLLECTION[self.user_id]
                     if trigger_collection.reply_to_all or trigger_collection.reply_to_phrases:
                         # message:patched.Message = event.message
@@ -126,6 +128,7 @@ class Controller(BaseModel):
                             logger.success(f"Answer find {answer}")
                             await asyncio.sleep(2.5)
                             await self.client.send_message(await event.get_chat(), answer)
+                            self.answered.append(event.chat_id)
 
         await self.connect(new)
 

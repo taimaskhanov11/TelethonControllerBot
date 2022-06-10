@@ -28,7 +28,7 @@ class DbUser(models.Model):
             user = await cls.create(
                 user_id=user_id,
                 username=username,
-                subscription=await Subscription.create(),
+                subscription=await Subscription.create(duration=5),
                 register_data=datetime.datetime.now(TZ),
             )
             is_created = True

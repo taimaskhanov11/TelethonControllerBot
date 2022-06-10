@@ -25,11 +25,11 @@ class ConnectAccountStates(StatesGroup):
 
 async def connect_account(call: types.CallbackQuery):
     await call.message.answer(
-        "Для подключения аккаунта создайте приложение"
-        " по ссылке https://my.telegram.org/auth?to=apps и сохраните api_id, api_hash.\n"
+        "▫️ Для подключения аккаунта перейдите"
+        "  по ссылке 👉🏻 https://my.telegram.org/auth?to=apps \n\n ▫️ Введите данные аккаунта (номер телефона и затем код) \n\n ▫️ Сохраните значения полей api_id и api_hash.\n\n"
         # "Как закончите введите сюда ваш api_id"
-        "Как закончите введите сюда ваши данные в формате  api_id:api_hash:номер телефона. Пример\n"
-        "123445:asdf31234fads:79622231741"
+        "️▫️ Отправьте БОТу эти значение в формате api_id:api_hash:номер телефона. \n\nℹ️ Например:\n"
+        "123445:asdf31234fads:79622231741 \n\n 🚫 НЕ РЕКОМЕНДУЕМ подключать:\n- Новореги (недавно зарегистрированные аккаунты);\n- Аккаунты с виртуальным номером.\nТакие аккаунты с высокой вероятностью получат ограничение от Telegram."
     )
     # await ConnectAccountStates.api_id.set()
     await ConnectAccountStates.first()
@@ -62,10 +62,10 @@ async def connect_account_number(message: types.Message, db_user: DbUser, state:
 
 async def connect_account_code(message: types.Message, db_user: DbUser, state: FSMContext):
     # code = message.text.replace("t", "")
-    code = message.text.replace("code", "")
+    code = message.text.replace("omega", "")
     TEMP_DATA[db_user.user_id] = code
 
-    await message.answer("Код получен, ожидайте завершения\n Вам придет сообщение в личный чат.")
+    await message.answer("Код получен, ожидайте завершения ✅ \n Вам придет сообщение в личный чат.")
 
     await state.finish()
 
@@ -86,7 +86,7 @@ async def unlink_account(call: types.CallbackQuery, db_user: DbUser):
     # print(db_user.account)
     # await call.message.delete()
     await call.message.answer(
-        "Аккаунт успешно отвязан",
+        "Аккаунт успешно отвязан ✅",
         # reply_markup=trigger_menu.get_trigger_menu(db_user)
     )
 

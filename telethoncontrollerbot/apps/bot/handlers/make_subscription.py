@@ -28,7 +28,7 @@ class BuySubscription(StatesGroup):
 async def buy_sub(message: types.Message):
     try:
         await message.delete()
-        await message.answer("❗️Выберите подписку", reply_markup=get_subscribe_menu_view())
+        await message.answer("📝 Выберите подписку:", reply_markup=get_subscribe_menu_view())
     except Exception as e:
         logger.critical(e)
         await message.answer("Нет подписок")
@@ -53,7 +53,7 @@ async def create_subscribe(call: types.CallbackQuery, db_user: DbUser):
             bill = await YooPayment.get(bill_db.bill_id)
             await call.message.delete()
             await call.message.answer(
-                f"❗️Ожидание оплаты предыдущей подписки\n" f"{bill_db.subscription.title}",
+                f"⌛️ Ожидание оплаты предыдущей подписки.\n" f"{bill_db.subscription.title}",
                 reply_markup=get_subscribe_payment(bill.confirmation.confirmation_url),
             )
             return
@@ -84,8 +84,8 @@ async def reject_payment(call: types.CallbackQuery, db_user: DbUser):
     await bill_obj.subscription.delete()
     await call.message.delete()
 
-    logger.info(f"{call.from_user.id}|Оплата {bill_obj.bill_id}|{bill.status} отменена ")
-    await call.message.answer(f"Оплата {bill_obj.subscription.title} отменена ")
+    logger.info(f"{call.from_user.id}|Оплата {bill_obj.bill_id}|{bill.status} отменена. ")
+    await call.message.answer(f"Оплата {bill_obj.subscription.title} отменена. ")
 
 
 async def accept_payment(call: types.CallbackQuery, db_user: DbUser):
@@ -98,10 +98,10 @@ async def accept_payment(call: types.CallbackQuery, db_user: DbUser):
     elif is_paid == "canceled":
         await call.message.delete()
         await call.message.answer(
-            f"Чек на подписку {db_bill.subscription.title} отменен, пожалуйста сделайте запрос еще раз"
+            f"Чек на подписку {db_bill.subscription.title} отменен, пожалуйста сделайте запрос еще раз."
         )
     else:
-        await call.answer("❗️ Платеж не найден")
+        await call.answer("⚠️ Платеж не найден.")
 
 
 def register_subscriptions_handlers(dp: Dispatcher):

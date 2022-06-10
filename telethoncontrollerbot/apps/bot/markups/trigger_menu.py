@@ -5,10 +5,10 @@ from telethoncontrollerbot.apps.controller.triggers_data import TriggerCollectio
 
 def get_trigger_menu(db_user):
     _triggers_menu_data_buttons = [
-        ("Отвязать аккаунт", "unlink_account") if db_user.account else ("Подключить аккаунт", "connect_account"),
-        ("Текущие триггеры", "current_triggers"),
-        ("Создать новый триггер", "new_trigger"),
-        ("Перезапустить бота", "restart_controller_bot"),
+        ("➖ Отвязать аккаунт", "unlink_account") if db_user.account else ("➕ Подключить аккаунт", "connect_account"),
+        ("💬 Текущие автоответы", "current_triggers"),
+        ("📝 Создать новый автоответ", "new_trigger"),
+        ("🔁 Перезапустить бота", "restart_controller_bot"),
     ]
 
     triggers_menu = InlineKeyboardMarkup(
@@ -65,9 +65,9 @@ def change_trigger_status(tr_col: TriggerCollection):
             f"{'Отключить' if tr_col.reply_to_channels else 'Включить'} ответ на сообщения из каналов",
             "change_trigger_status_reply_to_channels",
         ),
-        ("Создать новый триггер", "new_trigger"),
+        ("Создать новый ответ", "new_trigger"),
         ("Изменить данные", "change_triggers"),
-        ("Удалить триггер", "delete_triggers"),
+        ("Удалить ответ", "delete_triggers"),
     ]
 
     return InlineKeyboardMarkup(

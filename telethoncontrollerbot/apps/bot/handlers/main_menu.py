@@ -15,7 +15,7 @@ class LangChoice(StatesGroup):
 @logger.catch
 async def start(message: types.Message, state: FSMContext):
     await state.finish()
-    await message.answer("Главное меню", reply_markup=main_menu.main_menu_common)
+    await message.answer("👷 Используйте кнопки меню:", reply_markup=main_menu.main_menu_common)
 
 
 async def profile(message: types.Message, db_user: DbUser, state: FSMContext):
