@@ -5,7 +5,6 @@ from loguru import logger
 from pydantic import BaseModel, Field, validator
 from telethon import events
 
-from telethoncontrollerbot.db.db_main import init_tortoise
 from telethoncontrollerbot.db.models import DbTriggerCollection
 
 
@@ -41,6 +40,7 @@ class TriggerCollection(BaseModel):
 
     reply_to_channels: bool
     reply_to_groups: bool
+    reply_to_first: bool = False
 
     all_message_answer: Optional[str]
 
@@ -97,6 +97,7 @@ class TriggerCollection(BaseModel):
             f"{triggers_str}\n"
             f"Ответ на фразы: {'✅ Включен' if self.reply_to_phrases else '❌ Отключен'}\n"
             f"Ответ на любой текст сообщения: {'✅ Включен' if self.reply_to_all else '❌ Отключен'}\n"
+            f"Ответ только на первое сообщение: {'✅ Включен' if self.reply_to_first else '❌ Отключен'}\n"
             f"Текст ответа любой текст сообщения если включен 'Ответ на любой текст сообщения':\n"
             f"НОМЕР 0"
             f"⬅️{self.all_message_answer}\n"

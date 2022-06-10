@@ -79,14 +79,18 @@ async def change_trigger_status(call: types.CallbackQuery):
     tr_col = TRIGGERS_COLLECTION[call.from_user.id]
     status = getattr(tr_col, field)
     setattr(tr_col, field, not status)
-    db_trigger_coll = await DbTriggerCollection.get(id=tr_col.id)
-    setattr(db_trigger_coll, field, not status)
-    await db_trigger_coll.save()
+    try:
+        db_trigger_coll = await DbTriggerCollection.get(id=tr_col.id)
+        setattr(db_trigger_coll, field, not status)
+        await db_trigger_coll.save()
+    except Exception as e:
+        logger.warning(e)
     # await call.message.answer("Данные обновлены")
     await call.message.edit_text(f"{str(tr_col)}\n\n")
     await call.message.edit_reply_markup(trigger_menu.change_trigger_status(tr_col))
 
-    # await call.message.answer("Данные обновлены", reply_markup=trigger_menu.change_trigger_status(tr_col))
+
+# await call.message.answer("Данные обновлены", reply_markup=trigger_menu.change_trigger_status(tr_col))
 
 
 async def triggers_delete_start(call: types.CallbackQuery):

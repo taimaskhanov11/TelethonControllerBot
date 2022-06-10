@@ -65,6 +65,11 @@ def change_trigger_status(tr_col: TriggerCollection):
             f"{'Отключить' if tr_col.reply_to_channels else 'Включить'} ответ на сообщения из каналов",
             "change_trigger_status_reply_to_channels",
         ),
+        (
+            f"{'Отключить' if tr_col.reply_to_first else 'Включить'} ответ только на первое сообщение",
+            "change_trigger_status_reply_to_first",
+        ),
+
         ("Создать новый ответ", "new_trigger"),
         ("Изменить данные", "change_triggers"),
         ("Удалить ответ", "delete_triggers"),
